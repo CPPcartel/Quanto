@@ -1,0 +1,1154 @@
+:root {
+  --paper: #11131a;
+  --panel: rgba(24, 27, 36, 0.88);
+  --panel-border: rgba(58, 63, 78, 0.9);
+  --ink: #ecedf3;
+  --ink-muted: #9ba1b2;
+  --ink-faint: #676d7d;
+  --up: #5fb37e;
+  --down: #db7264;
+  --flat: #8a90a0;
+  --amber: #e5a85c;
+  --violet: #8d8af2;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/*
+  Only the game locks the viewport.
+
+  This stylesheet is imported globally alongside the site's, so applying
+  `height: 100%; overflow: hidden` to html/body unconditionally would stop the
+  marketing pages scrolling at all. The Game component adds `game-mode` to both
+  html and body while it is mounted, and removes it on unmount.
+*/
+html.game-mode,
+body.game-mode {
+  height: 100%;
+  overflow: hidden;
+}
+body.game-mode #root {
+  height: 100%;
+}
+
+.shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+}
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+  outline: none;
+  /* Pixel art must never be resampled by the browser on scale. */
+  image-rendering: pixelated;
+}
+.mono {
+  font-family: var(--mono);
+}
+/* Right rail stacks: minimap, then zoom, then diagnostics. */
+.top-right {
+  top: 16.5rem;
+  right: 1rem;
+}
+.debug-readout {
+  top: 23rem;
+  right: 1rem;
+}
+
+/* ---------- wallet ---------- */
+.wallet {
+  top: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.wallet .panel {
+  min-width: 13rem;
+}
+.wallet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+.wallet-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+.wallet-value {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
+}
+.charge {
+  margin-top: 0.35rem;
+}
+.charge .wallet-value {
+  color: var(--violet);
+}
+.charge-bar {
+  height: 3px;
+  background: rgba(58, 63, 78, 0.7);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.2rem;
+}
+.charge-fill {
+  height: 100%;
+  background: var(--violet);
+  box-shadow: 0 0 6px var(--violet);
+  transition: width 0.4s linear;
+}
+
+/* ---------- floors ---------- */
+.floors {
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--panel-border);
+}
+.occupancy {
+  height: 4px;
+  background: rgba(58, 63, 78, 0.7);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0.35rem 0 0.5rem;
+}
+.occupancy-fill {
+  height: 100%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  transition: width 0.5s ease;
+}
+.mine {
+  margin: 0 0 0.5rem;
+  color: var(--amber);
+}
+button.buy {
+  width: 100%;
+  background: rgba(229, 168, 92, 0.14);
+  border-color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  padding: 0.42rem 0.6rem;
+}
+button.buy:hover:not(:disabled) {
+  background: rgba(229, 168, 92, 0.26);
+}
+button.buy:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--panel-border);
+  background: none;
+}
+.flash {
+  margin: 0.45rem 0 0;
+}
+.tier {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+.tier-calm {
+  color: var(--ink-muted);
+}
+.tier-normal {
+  color: var(--up);
+}
+.tier-hot {
+  color: var(--amber);
+}
+.tier-extreme {
+  color: var(--down);
+}
+
+/* ---------- shift minigame ---------- */
+button.shift {
+  width: 100%;
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  padding: 0.42rem 0.6rem;
+}
+.shift-overlay {
+  bottom: 6.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.shift-panel {
+  min-width: 22rem;
+}
+.shift-bar {
+  position: relative;
+  height: 26px;
+  margin: 0.6rem 0 0.2rem;
+  background: rgba(13, 15, 21, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.shift-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(95, 179, 126, 0.3);
+  border-left: 1px solid var(--up);
+  border-right: 1px solid var(--up);
+}
+.shift-marker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  background: var(--amber);
+  box-shadow: 0 0 10px var(--amber);
+  transform: translateX(-50%);
+}
+.payout {
+  font-size: 1.4rem;
+  color: var(--up);
+  margin: 0.3rem 0 0;
+}
+
+/* ---------- storms ---------- */
+.storm-banner {
+  top: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 5.5rem;
+}
+.storm-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-color: var(--down);
+  animation: storm-pulse 1.6s ease-in-out infinite;
+}
+.pill-storm {
+  color: var(--down);
+}
+@keyframes storm-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(219, 114, 100, 0);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(219, 114, 100, 0.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .storm-panel {
+    animation: none;
+  }
+}
+.shard-toast {
+  bottom: 11rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--amber);
+}
+
+/* ---------- sign crafter ---------- */
+button.sign-toggle {
+  width: 100%;
+  margin-top: 0.4rem;
+  background: none;
+  border-color: var(--panel-border);
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+}
+button.sign-toggle:hover:not(:disabled) {
+  border-color: var(--violet);
+  color: var(--ink);
+}
+button.sign-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.crafter {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.swatches {
+  display: flex;
+  gap: 0.35rem;
+}
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid var(--panel-border);
+  padding: 0;
+  cursor: pointer;
+}
+.swatch.on {
+  border-color: #fff;
+}
+
+/* ---------- minimap ---------- */
+.minimap {
+  top: 3rem;
+  right: 1rem;
+}
+.minimap canvas {
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+}
+.minimap-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.1rem 0.4rem;
+  margin-top: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- wallet ---------- */
+.account,
+.wallet-chip {
+  top: 3rem;
+  left: 1rem;
+  margin-top: 13.5rem;
+}
+.account .panel,
+.wallet-chip .panel {
+  max-width: 17rem;
+}
+button.connect {
+  width: 100%;
+  background: rgba(34, 232, 255, 0.14);
+  border-color: #22e8ff;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  padding: 0.4rem 0.6rem;
+}
+button.connect:hover:not(:disabled) {
+  background: rgba(34, 232, 255, 0.26);
+}
+button.connect:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+.connect-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.dot-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--up);
+  box-shadow: 0 0 7px var(--up);
+  flex: none;
+}
+
+/* ---------- leaderboard ---------- */
+.leaderboard {
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.leaderboard .panel {
+  min-width: 17rem;
+}
+button.board-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.board {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+.board-tabs {
+  display: flex;
+  gap: 0.15rem;
+  margin-top: 0.55rem;
+  border-bottom: 1px solid var(--panel-border);
+  overflow-x: auto;
+}
+.board-tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.42rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.board-tabs button:hover { color: var(--ink-muted); }
+.board-tabs button.on { color: var(--amber); border-bottom-color: var(--amber); }
+.board-season {
+  margin: 0.45rem 0 0;
+  color: var(--violet);
+  letter-spacing: 0.05em;
+}
+.board-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-name.me { color: var(--amber); }
+
+.board-row {
+  display: grid;
+  grid-template-columns: 1rem 4.6rem 1fr 3.2rem;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+}
+.board-rank {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+}
+.board-bar {
+  height: 4px;
+  background: rgba(58, 63, 78, 0.7);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.board-fill {
+  display: block;
+  height: 100%;
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+
+/* ---------- help / docs ---------- */
+/*
+  Sits above the building inspector rather than beside it. Both were anchored
+  to bottom-right, so the help button rendered on top of the inspector panel —
+  and the inspector's height changes with its content, so a fixed offset would
+  not have been reliable either. Anchoring to the right rail instead keeps them
+  apart whatever the inspector is showing.
+*/
+.help-button {
+  top: 31.5rem;
+  right: 1rem;
+}
+button.help {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 700;
+  background: rgba(34, 232, 255, 0.14);
+  border-color: #22e8ff;
+  cursor: pointer;
+  pointer-events: auto;
+}
+button.help:hover {
+  background: rgba(34, 232, 255, 0.3);
+}
+
+.docs-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.docs {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  width: min(46rem, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+}
+.docs-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.1rem 1.3rem 0.9rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+.docs-head h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.2rem;
+}
+.docs-tabs {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.6rem 1rem 0;
+  border-bottom: 1px solid var(--panel-border);
+  overflow-x: auto;
+}
+button.docs-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  padding: 0.4rem 0.7rem;
+  white-space: nowrap;
+}
+button.docs-tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--violet);
+}
+.docs-body {
+  padding: 1.2rem 1.3rem 1.6rem;
+  overflow-y: auto;
+}
+.docs-body h3 {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  margin: 1.5rem 0 0.4rem;
+  color: var(--amber);
+}
+.docs-body h3:first-child { margin-top: 0; }
+.docs-body .lede {
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.docs-body ul { padding-left: 1.2rem; margin: 0 0 1rem; }
+.docs-body li { margin-bottom: 0.35rem; font-size: 0.92rem; }
+.docs-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.docs-table td { padding: 0.32rem 0; border-bottom: 1px solid var(--panel-border); }
+.docs-table td:first-child { width: 11rem; color: var(--ink-muted); }
+.debug-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.1rem 0.7rem;
+  margin-top: 0.4rem;
+  color: var(--ink-faint);
+}
+.debug-grid > span:nth-child(even) {
+  text-align: right;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- panels ---------- */
+.hud {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+}
+.hud .panel,
+.overlay .panel {
+  pointer-events: auto;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  max-width: 22rem;
+}
+.panel.compact {
+  padding: 0.65rem 0.8rem;
+}
+
+.top-left {
+  top: 3rem;
+  left: 1rem;
+}
+.bottom-left {
+  bottom: 1rem;
+  left: 1rem;
+}
+.bottom-right {
+  bottom: 1rem;
+  right: 1rem;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(10, 12, 17, 0.72);
+}
+.overlay.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.error-panel {
+  border-color: var(--down);
+}
+
+h1 {
+  font-size: 1.15rem;
+  margin: 0.5rem 0 0.2rem;
+  letter-spacing: -0.01em;
+}
+h2 {
+  font-size: 1rem;
+  margin: 0 0 0.2rem;
+  font-family: var(--mono);
+}
+p {
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+.dim {
+  color: var(--ink-muted);
+}
+.small {
+  font-size: 0.82rem;
+}
+.tiny {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  margin: 0.5rem 0 0;
+}
+.up {
+  color: var(--up);
+}
+.down {
+  color: var(--down);
+}
+.flat {
+  color: var(--flat);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.row.space {
+  justify-content: space-between;
+}
+
+/* ---------- pills ---------- */
+.pill {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  padding: 0.16rem 0.42rem;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.pill-open {
+  color: var(--up);
+}
+.pill-closed {
+  color: var(--violet);
+}
+.pill-ok {
+  color: var(--ink-faint);
+}
+.pill-warn {
+  color: var(--amber);
+}
+
+.note {
+  margin: 0.6rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border-left: 2px solid var(--violet);
+  background: rgba(141, 138, 242, 0.08);
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+/* ---------- stats ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0.7rem 0 0;
+}
+.stats > div {
+  min-width: 0;
+}
+.stats dt {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.15rem;
+}
+.stats dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.price {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* ---------- ticker tape ---------- */
+.tape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.1rem;
+  z-index: 12;
+  overflow: hidden;
+  background: rgba(13, 15, 21, 0.92);
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.tape-track {
+  display: flex;
+  gap: 1.8rem;
+  white-space: nowrap;
+  animation: scroll-tape 90s linear infinite;
+  padding-left: 1rem;
+}
+.tape-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.42rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+.tape-item b {
+  color: var(--ink);
+}
+.tape-price {
+  color: var(--ink-muted);
+}
+
+@keyframes scroll-tape {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tape-track {
+    animation: none;
+  }
+}
+
+/* ---------- controls ---------- */
+.keys {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+kbd {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  background: rgba(58, 63, 78, 0.55);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+  margin-right: 0.1rem;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(13, 15, 21, 0.9);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  color: var(--ink);
+  padding: 0.3rem 0.45rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 1px;
+}
+button {
+  background: rgba(141, 138, 242, 0.16);
+  border: 1px solid var(--violet);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+button.link {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  text-decoration: underline;
+  padding: 0;
+  font-size: 0.72rem;
+}
+button:hover {
+  color: #fff;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: rgba(13, 15, 21, 0.8);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+/* ---------- chat ---------- */
+.chat {
+  bottom: 1rem;
+  left: 1rem;
+  margin-bottom: 5.5rem;
+}
+.chat-panel {
+  width: 21rem;
+  max-width: calc(100vw - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.chat-log {
+  max-height: 9.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  scrollbar-width: thin;
+}
+.chat-line {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.chat-line b { margin-right: 0.35rem; }
+.chat-line.district { color: var(--ink-muted); }
+.chat-ch {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--violet);
+  margin-right: 0.3rem;
+}
+.chat-form { display: flex; gap: 0.35rem; align-items: center; }
+.chat-form input { flex: 1; min-width: 0; }
+button.chat-scope {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.45rem;
+  border-color: var(--panel-border);
+  background: none;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+button.chat-scope.district { color: var(--violet); border-color: var(--violet); }
+.chat-actions { display: flex; gap: 0.9rem; }
+.emote-row { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+button.emote-btn {
+  background: none;
+  border: 1px solid var(--panel-border);
+  font-size: 1rem;
+  padding: 0.15rem 0.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+button.emote-btn:hover { border-color: var(--violet); }
+
+/* ---------- crew + market dock ----------
+   Both sit under the wallet readout in the centre column: crew right-aligned
+   just left of centre, market left-aligned just right of it, so their expanded
+   panels grow outward instead of over each other. The centre column is empty
+   between the wallet and the leaderboard, which is why they live here rather
+   than in the already-stacked left and right rails. */
+.crew-launcher,
+.market-launcher {
+  top: 3rem;
+  left: 50%;
+  margin-top: 5.2rem;
+}
+.crew-launcher {
+  transform: translateX(-100%);
+  margin-left: -0.3rem;
+}
+.market-launcher {
+  margin-left: 0.3rem;
+}
+
+.crew-chip {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.crew-chip:hover {
+  border-color: var(--amber);
+  color: var(--ink);
+}
+.crew-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 6px currentColor;
+}
+.crew-dot.dim-dot {
+  background: var(--panel-border);
+  box-shadow: none;
+}
+
+.crew-panel,
+.market-panel {
+  width: 17.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.market-panel {
+  width: 20rem;
+}
+.crew-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.crew-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.crew-name {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.crew-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--panel-border);
+}
+.crew-note {
+  margin: 0;
+  line-height: 1.4;
+}
+.field-label {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.text-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.primary-btn,
+.ghost-btn {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--amber);
+  background: none;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.ghost-btn {
+  border-color: var(--panel-border);
+  color: var(--ink-muted);
+}
+.primary-btn:hover:not(:disabled) {
+  background: rgba(255, 179, 71, 0.12);
+}
+.ghost-btn:hover:not(:disabled) {
+  border-color: var(--down);
+  color: var(--down);
+}
+.primary-btn:disabled,
+.ghost-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.tiny-btn {
+  padding: 0.22rem 0.45rem;
+  font-size: 0.64rem;
+  flex: none;
+}
+
+/* Listings scroll inside the panel — a busy market must not push the HUD
+   off the bottom of the screen. */
+.listings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 13rem;
+  overflow-y: auto;
+  margin-top: 0.2rem;
+}
+.listing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.32rem 0.4rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+}
+.listing-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.listing-sym {
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+.listing-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* Local-time readout under the zoom pill. */
+.sky-clock {
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--panel-border);
+  text-transform: capitalize;
+}
+
+/* Shown only while the camera has been dragged off the player. */
+.recentre-btn {
+  width: 100%;
+  margin-top: 0.4rem;
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* Shown while standing in a park, where CHARGE regenerates faster. */
+.charge-bar.resting {
+  box-shadow: 0 0 8px rgba(59, 255, 143, 0.5);
+}
+.resting-note {
+  margin: 0.25rem 0 0;
+  color: var(--up);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- NFT collection panel ----------
+   Sits under the crew/market dock in the centre column. */
+.collection-launcher {
+  top: 3rem;
+  left: 50%;
+  margin-top: 8rem;
+  transform: translateX(-50%);
+}
+.collection-panel {
+  width: 19rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.trait-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.15rem 0.6rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--panel-border);
+}
+.trait-row {
+  display: flex;
+  justify-content: space-between;
+  text-transform: capitalize;
+}
+.tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.tier-card {
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+}
+.tier-card.on {
+  border-color: var(--amber);
+  background: rgba(255, 179, 71, 0.06);
+}
+.tier-grants {
+  margin: 0.2rem 0 0;
+  padding-left: 0.9rem;
+  line-height: 1.45;
+}
+.tier-link {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}

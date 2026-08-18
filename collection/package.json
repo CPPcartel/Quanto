@@ -1,0 +1,11 @@
+{
+  "name": "candlestick-collection",
+  "private": true,
+  "type": "module",
+  "description": "Generator for the Candlestick Residents pixel NFT collection.",
+  "scripts": {
+    "preview": "node src/generate.mjs --preview",
+    "build": "node src/generate.mjs",
+    "verify": "node src/verify.mjs"
+  }
+}

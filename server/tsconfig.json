@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // NodeNext (not Bundler): the built output is executed by node directly,
+    // and our relative imports already carry the .js extensions it requires.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "sourceMap": true
+  },
+  "include": ["src"]
+}

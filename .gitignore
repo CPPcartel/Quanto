@@ -1,0 +1,33 @@
+node_modules/
+dist/
+*.log
+
+# Local game database (regenerated on first run)
+server/data/
+# Throwaway database used by the end-to-end suite
+server/data-e2e/
+
+# Generated collection output — 37MB of PNGs, reproducible from the seed.
+# The GENERATOR is committed; its output is not. Anyone can rebuild it byte for
+# byte with "npm run build" in collection/.
+collection/out/
+collection/preview/
+
+# Hardhat build output
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+
+# ---------------------------------------------------------------------------
+# Secrets
+#
+# `.env` with no slash matches at any depth, so this covers contracts/.env —
+# which holds a deployment private key — as well as the server's.
+#
+# The negation matters: `.env.*` would otherwise swallow the .env.example files,
+# and those are documentation meant to be committed. Order is significant; a
+# negation only works if it comes after the pattern it undoes.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example

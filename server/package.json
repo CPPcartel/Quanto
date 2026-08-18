@@ -1,0 +1,36 @@
+{
+  "name": "candlestick-city-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test:db": "tsc -p tsconfig.json && node scripts/test-db.mjs",
+    "import": "node scripts/import-sqlite.mjs",
+    "db:reset": "node scripts/reset-db.mjs",
+    "test:market": "npm run build && node scripts/test-market.mjs",
+    "test:e2e": "node scripts/test-e2e.mjs",
+    "test": "npm run build && node scripts/test-db.mjs && node scripts/test-territory.mjs && node scripts/test-market.mjs && node scripts/test-parks.mjs && node scripts/test-charge.mjs && node scripts/test-city-overlap.mjs && node scripts/test-shifts.mjs && node scripts/test-nft.mjs"
+  },
+  "dependencies": {
+    "@colyseus/core": "0.16.25",
+    "@colyseus/schema": "^3.0.0",
+    "@colyseus/ws-transport": "0.16.5",
+    "@privy-io/server-auth": "^1.32.5",
+    "express": "latest",
+    "postgres": "^3.4.9",
+    "viem": "^2.55.13"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "colyseus.js": "^0.16.22",
+    "tsx": "latest",
+    "typescript": "latest"
+  },
+  "overrides": {
+    "@colyseus/greeting-banner": "2.0.6"
+  }
+}

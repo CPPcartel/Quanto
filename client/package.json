@@ -1,0 +1,35 @@
+{
+  "name": "candlestick-city-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/build-whitepaper.mjs && vite build",
+    "preview": "vite preview",
+    "whitepaper": "node scripts/build-whitepaper.mjs",
+    "test": "tsc --noEmit -p tsconfig.json && node scripts/test-traits.mjs && node scripts/test-crowd.mjs && node scripts/test-charcache.mjs"
+  },
+  "dependencies": {
+    "@privy-io/react-auth": "^3.37.1",
+    "colyseus.js": "^0.16.22",
+    "pixi-filters": "^6.1.5",
+    "pixi.js": "^8.19.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "viem": "^2.55.13"
+  },
+  "devDependencies": {
+    "@solana-program/system": "^0.13.0",
+    "@solana-program/token": "^0.15.0",
+    "@solana/kit": "^7.1.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "pdfkit": "^0.19.1",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "overrides": {
+    "ox": "0.14.33"
+  }
+}
