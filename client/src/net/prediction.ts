@@ -39,7 +39,30 @@ export interface Movable {
  * Integrate one command. This is a line-for-line twin of `applyInput` on the
  * server; any change here must be mirrored there.
  */
-export function applyInput(target: Movable, cmd: InputCommand, dt: number): boolean {
+/**
+ * A rectangle this mover may not enter. Null when nothing is barred.
+ *
+ * Passed in rather than looked up, so `applyInput` stays a pure function of its
+ * arguments — which is the only reason the client and server copies can be
+ * compared line for line.
+ */
+export interface Barrier {
+  x: number;
+  z: number;
+  half: number;
+}
+
+function barred(barrier: Barrier | null | undefined, x: number, z: number): boolean {
+  if (!barrier) return false;
+  return Math.abs(x - barrier.x) <= barrier.half && Math.abs(z - barrier.z) <= barrier.half;
+}
+
+export function applyInput(
+  target: Movable,
+  cmd: InputCommand,
+  dt: number,
+  barrier?: Barrier | null
+): boolean {
   let dx = 0;
   let dz = 0;
   if (cmd.up) dz -= 1;
@@ -59,8 +82,17 @@ export function applyInput(target: Movable, cmd: InputCommand, dt: number): bool
   const worldZ = dx * sin + dz * cos;
 
   const speed = cmd.run ? RUN_SPEED : WALK_SPEED;
-  target.x = clamp(target.x + worldX * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
-  target.z = clamp(target.z + worldZ * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
+  const nextX = clamp(target.x + worldX * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
+  const nextZ = clamp(target.z + worldZ * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
+
+  /**
+   * Axis-separated, so a barred mover slides along the wall instead of sticking
+   * to it. Testing the combined position would stop them dead the moment either
+   * axis entered, which reads as a bug rather than as a door.
+   */
+  if (!barred(barrier, nextX, target.z)) target.x = nextX;
+  if (!barred(barrier, target.x, nextZ)) target.z = nextZ;
+
   target.yaw = Math.atan2(worldX, worldZ);
   return true;
 }
@@ -85,7 +117,7 @@ export class Predictor {
       const cmd: InputCommand = { ...sample(), seq: ++this.seq };
 
       // Predict immediately — the player never waits for the round trip.
-      applyInput(world.local, cmd, SIM_DT);
+      applyInput(world.local, cmd, SIM_DT, clubBarrier());
       this.pending.push(cmd);
       room?.send("input", cmd);
     }
@@ -108,7 +140,7 @@ export class Predictor {
     this.pending = this.pending.filter((cmd) => cmd.seq > auth.lastSeq);
 
     const replayed: Movable = { x: auth.x, z: auth.z, yaw: auth.yaw };
-    for (const cmd of this.pending) applyInput(replayed, cmd, SIM_DT);
+    for (const cmd of this.pending) applyInput(replayed, cmd, SIM_DT, clubBarrier());
 
     const drift = Math.hypot(replayed.x - world.local.x, replayed.z - world.local.z);
     if (drift > SNAP_DISTANCE) {
@@ -159,4 +191,22 @@ export function shortestAngle(from: number, to: number): number {
 
 function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
+}
+
+/**
+ * The Vault, as a barrier — or null if this player may enter.
+ *
+ * Read from replicated state rather than hardcoded, so the client can never
+ * disagree with the server about where the venue is. The permission check
+ * mirrors the server's `isHolder` exactly; if the two ever drift, a non-holder
+ * would predict walking in and then be yanked back every tick, which is far
+ * worse than a clean refusal.
+ *
+ * Returns null while the club has not replicated yet. That fails open for a
+ * second or two on join, which is the right direction to fail.
+ */
+export function clubBarrier(): Barrier | null {
+  if (world.localTier && world.localTier !== "none") return null;
+  const club = world.parks.find((p) => p.kind === "club");
+  return club ? { x: club.x, z: club.z, half: club.half } : null;
 }

@@ -3,6 +3,7 @@
  * current input state synchronously without re-render churn.
  */
 import { isTyping } from "../ui/keyboard";
+import { clubAudio } from "../pixi/audio";
 
 
 const pressed = new Set<string>();
@@ -37,6 +38,9 @@ export const camera = {
 
 export function installInput(target: HTMLElement) {
   const onKeyDown = (e: KeyboardEvent) => {
+    // WASD is the first thing most players touch, so it is the gesture that
+    // actually unlocks audio for them.
+    clubAudio.unlock();
     if (isTyping()) return;
     pressed.add(e.code);
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {

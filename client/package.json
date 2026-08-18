@@ -7,7 +7,7 @@
     "build": "node scripts/build-whitepaper.mjs && vite build",
     "preview": "vite preview",
     "whitepaper": "node scripts/build-whitepaper.mjs",
-    "test": "tsc --noEmit -p tsconfig.json && node scripts/test-traits.mjs && node scripts/test-crowd.mjs && node scripts/test-charcache.mjs"
+    "test": "tsc --noEmit -p tsconfig.json && node scripts/test-traits.mjs && node scripts/test-crowd.mjs && node scripts/test-charcache.mjs && node scripts/test-door.mjs"
   },
   "dependencies": {
     "@privy-io/react-auth": "^3.37.1",

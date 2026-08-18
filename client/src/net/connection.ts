@@ -269,6 +269,10 @@ export async function connect() {
 
     // ---- city-wide scalars -------------------------------------------------
     $(state).onChange(() => {
+      world.clubEvent = state.clubEvent ?? "";
+      world.clubEndsAt = state.clubEndsAt ?? 0;
+      world.clubIntensity = state.clubIntensity ?? 0;
+      world.clubInside = state.clubInside ?? 0;
       world.stormSymbol = state.stormSymbol ?? "";
       world.stormEndsAt = state.stormEndsAt ?? 0;
       world.phase = state.phase === "open" ? "open" : "closed";

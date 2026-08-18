@@ -114,7 +114,7 @@ export interface ParkView {
   z: number;
   /** Half-extent for square parks; radius for the plaza. */
   half: number;
-  kind: "green" | "water" | "plaza";
+  kind: "green" | "water" | "plaza" | "club";
   seed: number;
   district: string;
 }
@@ -202,6 +202,15 @@ export const world = {
   resting: false,
   block: 0,
   shardCount: 0,
+
+  /**
+   * The Vault. Replicated to everyone, holder or not — a guest seeing an event
+   * running is the whole point of a visible gated venue.
+   */
+  clubEvent: "",
+  clubEndsAt: 0,
+  clubIntensity: 0,
+  clubInside: 0,
 
   /** Active volatility storm, or "" when the city is calm. */
   stormSymbol: "",
@@ -329,6 +338,10 @@ export function resetWorld() {
   world.localTier = "none";
   world.localTraits = "000010";
   world.localPenthouse = "";
+  world.clubEvent = "";
+  world.clubEndsAt = 0;
+  world.clubIntensity = 0;
+  world.clubInside = 0;
   world.stormSymbol = "";
   world.stormEndsAt = 0;
   world.seasonLabel = "";

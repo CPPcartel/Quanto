@@ -1152,3 +1152,60 @@ button.emote-btn:hover { border-color: var(--violet); }
   text-align: center;
   text-decoration: none;
 }
+
+/* ---------- The Vault ----------
+   The banner is shown to everyone, holder or not — a guest reading that an
+   event is running is the whole point of a visible gated venue. */
+.club-banner {
+  top: 3rem;
+  right: 1rem;
+  margin-top: 11rem;
+}
+.club-panel {
+  width: 15rem;
+  border-color: rgba(255, 45, 149, 0.4);
+  box-shadow: 0 0 18px rgba(255, 45, 149, 0.14);
+}
+.club-live {
+  color: #ff2d95;
+}
+.club-event {
+  margin: 0.35rem 0 0;
+  font-size: 1.05rem;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.club-blurb {
+  margin: 0.15rem 0 0;
+}
+.club-locked {
+  margin: 0.5rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--panel-border);
+  line-height: 1.45;
+}
+
+.club-door {
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 9rem;
+}
+.club-door .panel {
+  max-width: 21rem;
+  border-color: rgba(255, 209, 102, 0.45);
+}
+.club-door-title {
+  margin: 0 0 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.club-audio {
+  top: 3rem;
+  right: 1rem;
+  margin-top: 9.4rem;
+}

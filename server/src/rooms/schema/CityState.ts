@@ -166,6 +166,21 @@ export class CityState extends Schema {
   /** Label of the active weekly season, e.g. "Week of 2026-08-10". */
   @type("string") seasonLabel = "";
 
+  // ---- The Vault --------------------------------------------------------
+  /**
+   * Active club event, or "" between them.
+   *
+   * Replicated to EVERYONE, holder or not. A guest seeing "Closing Bell at The
+   * Vault — 18 inside" is the entire mechanism of a gated venue; hiding it from
+   * non-holders would make the club invisible and therefore pointless.
+   */
+  @type("string") clubEvent = "";
+  @type("number") clubEndsAt = 0;
+  /** 0..1, drives the dance floor and the music tempo. */
+  @type("number") clubIntensity = 0;
+  /** How many players are in the venue, for the banner. */
+  @type("number") clubInside = 0;
+
   /** Ticker currently under a volatility storm, or "" when calm. */
   @type("string") stormSymbol = "";
   /** Epoch ms when the active storm ends. */

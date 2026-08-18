@@ -5,13 +5,25 @@ let fails = 0;
 const check = (l, c, d = "") => { if (!c) fails++; console.log(`  ${c ? "PASS" : "FAIL"}  ${l}${d ? `  — ${d}` : ""}`); };
 
 const lots = parkLots();
-const parks = lots.filter((l) => l.kind !== "plaza");
+/**
+ * "Parks" means the generated green and water lots only.
+ *
+ * The plaza and The Vault are hand-placed landmarks with different rules — the
+ * club is not even a park for CHARGE purposes. Identifying them by KIND rather
+ * than by position matters: an earlier version indexed `lots[0]` for the plaza,
+ * and adding the club to the front of the list broke three assertions that had
+ * nothing to do with the change.
+ */
+const parks = lots.filter((l) => l.kind === "green" || l.kind === "water");
 const water = lots.filter((l) => l.kind === "water");
+const plaza = lots.find((l) => l.kind === "plaza");
+const vault = lots.find((l) => l.kind === "club");
 
 console.log("\n[1] layout");
 check("parks were generated", parks.length > 10, `${parks.length} parks, ${water.length} with water`);
 check("exactly one plaza", lots.filter((l) => l.kind === "plaza").length === 1);
-check("plaza is at the origin", lots[0].x === 0 && lots[0].z === 0 && lots[0].half === PLAZA_RADIUS);
+check("plaza is at the origin", plaza?.x === 0 && plaza?.z === 0 && plaza?.half === PLAZA_RADIUS);
+check("exactly one club", lots.filter((l) => l.kind === "club").length === 1, vault?.id);
 
 console.log("\n[2] no park sits on a road or pavement");
 const ROAD_SPACING = 52, ROAD_HALF = 9, KERB = 4;

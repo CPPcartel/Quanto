@@ -11,6 +11,8 @@ import { ActorLayer } from "./Actors";
 import { FxLayer, ShardLayer, SignLayer, SkyLayer } from "./Fx";
 import { PropLayer } from "./Props";
 import { ParkLayer } from "./Parks";
+import { ClubLayer } from "./Club";
+import { clubAudio } from "./audio";
 import { CritterLayer } from "./Critters";
 import { CrowdLayer } from "./Crowd";
 import { art } from "./art";
@@ -92,6 +94,7 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
   const city = new CityLayer();
   const props = new PropLayer();
   const parks = new ParkLayer();
+  const club = new ClubLayer();
   const critters = new CritterLayer();
   const crowd = new CrowdLayer();
   const shards = new ShardLayer();
@@ -103,10 +106,15 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
     city.root,
     // Park ground sits on the city's ground plane, under every upright thing.
     parks.groundRoot,
+    // The club floor sits on the ground plane; its glow rides with the other
+    // additive light so the daylight tint never touches it.
+    club.groundRoot,
     props.glowRoot,
     parks.glowRoot,
+    club.glowRoot,
     props.root,
     parks.root,
+    club.root,
     // Living things sort with the buildings, like players do.
     crowd.root,
     critters.root,
@@ -239,6 +247,9 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
   };
 
   const onPointerDown = (event: PointerEvent) => {
+    // Browsers will not start audio without a gesture, and a suspended context
+    // is silent with no error. This is the earliest honest place to resume.
+    clubAudio.unlock();
     if (event.button !== 0) return;
     dragging = true;
     dragPointer = event.pointerId;
@@ -311,6 +322,7 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
         city.build();
         props.build();
         parks.build();
+        club.build();
         critters.build();
         crowd.build();
         const p = worldToScreen(world.local.x, world.local.z);
@@ -429,6 +441,8 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
       sky.update(dt);
       city.update(zoom, dt);
       parks.update(dt, zoom);
+      club.update(dt, zoom);
+      clubAudio.update();
       crowd.update(dt, zoom);
       critters.update(dt, zoom);
       // Street lamps follow darkness, not trading hours. Keying them off the

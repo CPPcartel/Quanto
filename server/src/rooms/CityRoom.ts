@@ -10,7 +10,7 @@ import {
   Listing,
 } from "./schema/CityState.js";
 import { DISTRICTS, TICKERS, layoutFor } from "../config/tickers.js";
-import { parkLots, parkAt } from "../config/parks.js";
+import { parkLots, parkAt, CLUB } from "../config/parks.js";
 import type { ChainlinkPoller } from "../oracle/ChainlinkPoller.js";
 import { accrue, buyFloor, initPlayerEconomy, refreshTickerEconomics } from "../game/floors.js";
 import { ShiftService } from "../game/shifts.js";
@@ -26,6 +26,7 @@ import { TerritoryService } from "../game/territory.js";
 import { CrewService } from "../game/crews.js";
 import { MarketService } from "../game/market.js";
 import { NftService, type Tier } from "../game/nft.js";
+import { ClubService, EVENT_LABEL } from "../game/club.js";
 import type { Db } from "../db/db.js";
 import { CHARGE_MAX, STARTING_BLOCK } from "../game/economy.js";
 
@@ -101,6 +102,7 @@ export class CityRoom extends Room<CityState> {
   private crews!: CrewService;
   private market!: MarketService;
   private nft!: NftService;
+  private club = new ClubService();
   /** sessionId -> persistent device id, for saving progress. */
   private devices = new Map<string, string>();
 
@@ -542,6 +544,20 @@ export class CityRoom extends Room<CityState> {
       this.state.players.forEach((player) => {
         if (player.emote && now - player.emoteAt > EMOTE_MS) player.emote = "";
       });
+
+      /**
+       * The Vault. Occupancy and intensity refresh every second; events fire
+       * from market transitions the state already carries.
+       */
+      const started = this.club.tick(this.state, this.boards?.currentSeason?.label ?? "");
+      if (started) {
+        this.broadcast("clubEvent", {
+          event: started,
+          label: EVENT_LABEL[started],
+          endsAt: this.state.clubEndsAt,
+        });
+        console.log(`[club] ${EVENT_LABEL[started]} started`);
+      }
     }, 1_000);
   }
 
@@ -876,7 +892,13 @@ export class CityRoom extends Room<CityState> {
       let running = false;
       for (let i = 0; i < budget; i++) {
         const cmd = queue[i];
-        const didMove = applyInput(player, cmd, SIM_DT);
+        /**
+         * Non-holders cannot walk into The Vault. The client applies the exact
+         * same barrier in its predictor, so a refused step is refused on both
+         * sides and there is nothing for reconciliation to fight about.
+         */
+        const barrier = isHolder(player) ? null : CLUB_BARRIER;
+        const didMove = applyInput(player, cmd, SIM_DT, barrier);
         moved = moved || didMove;
         running = running || (didMove && cmd.run);
         player.lastSeq = cmd.seq;
@@ -1011,10 +1033,29 @@ export class CityRoom extends Room<CityState> {
  * Integrate one input command. Shared in spirit with the client's predictor —
  * both must apply identical maths or reconciliation will fight the player.
  */
+/**
+ * A rectangle this mover may not enter. Null when nothing is barred.
+ *
+ * Passed in rather than looked up, so `applyInput` stays a pure function of its
+ * arguments — which is the only reason the client and server copies can be
+ * compared line for line.
+ */
+export interface Barrier {
+  x: number;
+  z: number;
+  half: number;
+}
+
+function barred(barrier: Barrier | null | undefined, x: number, z: number): boolean {
+  if (!barrier) return false;
+  return Math.abs(x - barrier.x) <= barrier.half && Math.abs(z - barrier.z) <= barrier.half;
+}
+
 export function applyInput(
   target: { x: number; z: number; yaw: number },
   cmd: InputCommand,
-  dt: number
+  dt: number,
+  barrier?: Barrier | null
 ): boolean {
   let dx = 0;
   let dz = 0;
@@ -1036,8 +1077,17 @@ export function applyInput(
   const worldZ = dx * sin + dz * cos;
 
   const speed = cmd.run ? RUN_SPEED : WALK_SPEED;
-  target.x = clamp(target.x + worldX * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
-  target.z = clamp(target.z + worldZ * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
+  const nextX = clamp(target.x + worldX * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
+  const nextZ = clamp(target.z + worldZ * speed * dt, -WORLD_LIMIT, WORLD_LIMIT);
+
+  /**
+   * Axis-separated, so a barred mover slides along the wall instead of sticking
+   * to it. Testing the combined position would stop them dead the moment either
+   * axis entered, which reads as a bug rather than as a door.
+   */
+  if (!barred(barrier, nextX, target.z)) target.x = nextX;
+  if (!barred(barrier, target.x, nextZ)) target.z = nextZ;
+
   target.yaw = Math.atan2(worldX, worldZ);
   return true;
 }
@@ -1049,4 +1099,17 @@ function clamp(v: number, min: number, max: number) {
 function round(v: number, dp: number) {
   const f = 10 ** dp;
   return Math.round(v * f) / f;
+}
+
+/** The Vault, as a barrier. Non-holders are refused inside this rectangle. */
+const CLUB_BARRIER: Barrier = { x: CLUB.x, z: CLUB.z, half: CLUB.half };
+
+/**
+ * May this player pass the rope?
+ *
+ * Fails OPEN on anything unexpected. A holder wrongly refused entry is a refund
+ * request; a non-holder who slips in for five minutes is nothing.
+ */
+function isHolder(player: { tier: string }): boolean {
+  return player.tier !== "" && player.tier !== "none";
 }

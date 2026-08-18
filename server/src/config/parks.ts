@@ -42,7 +42,20 @@ const LOT_HALF = 6;
 /** Clearance around a hero tower plot, matching the client's filler rule. */
 const TOWER_CLEARANCE = 24;
 
-export type ParkKind = "green" | "water" | "plaza";
+export type ParkKind = "green" | "water" | "plaza" | "club";
+
+/**
+ * The Vault — the holders-only club.
+ *
+ * Fixed position, chosen rather than generated: one block diagonally from the
+ * central plaza, in Crypto Alley, whose feeds are the only ones that never
+ * freeze. A club in the district that never closes.
+ *
+ * The size is not arbitrary either. Roads sit every 52 units and eat 13 to
+ * either side, which leaves a buildable band exactly 26 units wide — so 24 is
+ * the largest venue that fits between two streets without standing on tarmac.
+ */
+export const CLUB = { x: -78, z: -26, half: 12 } as const;
 
 export interface ParkLot {
   id: string;
@@ -120,7 +133,18 @@ export function parkLots(): ParkLot[] {
   const towers = TICKERS.map((t) => layoutFor(t));
   const lots: ParkLot[] = [];
 
-  // The plaza first, so it is always present regardless of the grid.
+  // The Vault, before the generated lots, so parks are laid out around it.
+  lots.push({
+    id: "vault",
+    x: CLUB.x,
+    z: CLUB.z,
+    half: CLUB.half,
+    kind: "club",
+    seed: 0.5,
+    district: "crypto",
+  });
+
+  // The plaza next, so it is always present regardless of the grid.
   lots.push({
     id: "plaza",
     x: 0,
@@ -136,6 +160,14 @@ export function parkLots(): ParkLot[] {
       if (!isBuildable(x, z)) continue;
       // Inside the plaza, and far enough out not to crowd its edge.
       if (Math.hypot(x, z) < PLAZA_RADIUS + LOT_HALF + 6) continue;
+
+      // The Vault is spoken for, with a margin so parks do not crowd the door.
+      if (
+        Math.abs(x - CLUB.x) < CLUB.half + LOT_HALF + 8 &&
+        Math.abs(z - CLUB.z) < CLUB.half + LOT_HALF + 8
+      ) {
+        continue;
+      }
 
       // Hero tower plots are spoken for.
       let blocked = false;
@@ -185,6 +217,10 @@ export function parkLots(): ParkLot[] {
  */
 export function parkAt(x: number, z: number): ParkLot | null {
   for (const lot of parkLots()) {
+    // The club is a venue, not a park: standing in it must not pay the resting
+    // CHARGE bonus, or holders would earn faster than everyone else and the
+    // whole feature would stop being cosmetic.
+    if (lot.kind === "club") continue;
     if (lot.kind === "plaza") {
       if (Math.hypot(x - lot.x, z - lot.z) <= lot.half) return lot;
       continue;
@@ -192,4 +228,18 @@ export function parkAt(x: number, z: number): ParkLot | null {
     if (Math.abs(x - lot.x) <= lot.half && Math.abs(z - lot.z) <= lot.half) return lot;
   }
   return null;
+}
+
+/**
+ * Is this position inside the club?
+ *
+ * Deliberately separate from `parkAt`. This one gates a door; that one pays a
+ * bonus. Sharing an implementation would mean any future change to one silently
+ * changed the other.
+ *
+ * The client runs an identical test in `net/prediction.ts` — they must agree,
+ * because movement is predicted locally and reconciled against the server.
+ */
+export function insideClub(x: number, z: number): boolean {
+  return Math.abs(x - CLUB.x) <= CLUB.half && Math.abs(z - CLUB.z) <= CLUB.half;
 }

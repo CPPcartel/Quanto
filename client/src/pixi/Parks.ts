@@ -83,6 +83,8 @@ export class ParkLayer {
     this.built = true;
 
     for (const park of world.parks) {
+      // The Vault has its own layer — it is a venue, not a park.
+      if (park.kind === "club") continue;
       this.placeGround(park);
       if (park.kind === "plaza") this.placePlaza(park);
       else this.placeLot(park);

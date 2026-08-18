@@ -23,6 +23,7 @@ import { ChatPanel } from "./Chat";
 import { CrewPanel } from "./Crew";
 import { MarketPanel } from "./Market";
 import { CollectionPanel } from "./Collection";
+import { ClubBanner, ClubDoor, ClubAudioToggle } from "./Club";
 
 const SIGN_COLORS = ["#22E8FF", "#FF2D95", "#FFB347", "#3BFF8F", "#A855F7"];
 
@@ -95,6 +96,9 @@ export function Hud() {
       <CrewPanel />
       <MarketPanel />
       <CollectionPanel />
+      <ClubBanner />
+      <ClubDoor />
+      <ClubAudioToggle />
       <ChatPanel />
       <HelpButton />
     </>
