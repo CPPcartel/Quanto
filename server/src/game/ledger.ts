@@ -74,7 +74,23 @@ export class Ledger {
   private detached = new Map<string, { amount: number; kind: LedgerKind; meta: Record<string, unknown> }>();
   private seq = 0;
 
-  private flushing = false;
+  /**
+   * The write currently in progress, if any.
+   *
+   * A promise rather than a boolean because callers `await flush()` in order to
+   * GUARANTEE their data is on disk — founding a crew needs the player row to
+   * exist, and `/audit` compares balances it has just settled. The previous
+   * boolean made `flush()` return immediately when another write was already
+   * running, so those callers got a resolved promise and no write at all.
+   *
+   * That was invisible against a local database, where a flush finishes in
+   * microseconds and is almost never in flight. Against managed Postgres in
+   * another region a write takes hundreds of milliseconds and the periodic
+   * flusher is frequently mid-transaction, so legitimate new players were told
+   * to "play a little before founding a crew" and the audit could compare
+   * against rows it believed it had just written.
+   */
+  private inFlight: Promise<void> | null = null;
   private timer?: NodeJS.Timeout;
 
   constructor(
@@ -198,7 +214,19 @@ export class Ledger {
    * season rows all have a player id to reference.
    */
   async flush(): Promise<void> {
-    if (this.flushing) return;
+    /**
+     * Wait out any write already running before judging whether there is work.
+     *
+     * The in-flight batch was taken before this caller queued anything, so its
+     * completion says nothing about this caller's rows. Looping rather than a
+     * single await handles several callers arriving at once.
+     */
+    while (this.inFlight) {
+      await this.inFlight.catch(() => {
+        /* the owner of that write reports its own failure */
+      });
+    }
+
     if (
       this.entries.length === 0 &&
       this.players.size === 0 &&
@@ -208,8 +236,6 @@ export class Ledger {
     ) {
       return;
     }
-
-    this.flushing = true;
 
     // Take the batch before awaiting, so gameplay continuing during the write
     // accumulates into the next one rather than being lost.
@@ -224,15 +250,19 @@ export class Ledger {
     this.season = new Map();
     this.detached = new Map();
 
+    const write = this.db.begin(async (tx) => {
+      const ids = await upsertPlayers(tx, players, floors, entries, season, detached);
+      await insertLedger(tx, entries, ids);
+      await upsertFloors(tx, floors, ids);
+      await upsertSeason(tx, season, ids, this.seasonId);
+      // Last: increments must land after the absolute balance upserts above.
+      await applyDetached(tx, detached, ids);
+    });
+    // Published before awaiting, so a concurrent caller waits for THIS write.
+    this.inFlight = write.then(() => undefined);
+
     try {
-      await this.db.begin(async (tx) => {
-        const ids = await upsertPlayers(tx, players, floors, entries, season, detached);
-        await insertLedger(tx, entries, ids);
-        await upsertFloors(tx, floors, ids);
-        await upsertSeason(tx, season, ids, this.seasonId);
-        // Last: increments must land after the absolute balance upserts above.
-        await applyDetached(tx, detached, ids);
-      });
+      await write;
     } catch (err) {
       // Put the batch back so a transient database problem doesn't lose
       // progress; the next tick retries it.
@@ -247,7 +277,7 @@ export class Ledger {
       }
       throw err;
     } finally {
-      this.flushing = false;
+      this.inFlight = null;
     }
   }
 }

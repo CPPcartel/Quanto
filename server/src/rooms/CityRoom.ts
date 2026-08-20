@@ -357,7 +357,20 @@ export class CityRoom extends Room<CityState> {
       async (client, msg: { name?: string; tag?: string; color?: string }) => {
         const deviceId = this.devices.get(client.sessionId);
         if (!deviceId || !msg) return;
-        // Flush first so a brand-new player has a row for the crew to reference.
+        /**
+         * Queue the player, THEN flush.
+         *
+         * `onJoin` registers the device mapping before it awaits the player
+         * load, so there is a window where the client is known but no row has
+         * been queued yet. Flushing inside that window writes nothing and the
+         * crew lookup then fails with "play a little before founding a crew" —
+         * to a player who has done nothing wrong.
+         *
+         * The window is sub-millisecond against a local database and hundreds of
+         * milliseconds against a managed one in another region, which is why
+         * this only appeared when the server was first pointed at Supabase.
+         */
+        this.persist(client.sessionId);
         await this.ledger.flush().catch(() => {});
         // The charter comes from the founder's verified tier. A client cannot
         // ask for one — there is no field for it in the message.
@@ -381,6 +394,8 @@ export class CityRoom extends Room<CityState> {
     this.onMessage("crewJoin", async (client, tag: string) => {
       const deviceId = this.devices.get(client.sessionId);
       if (!deviceId || typeof tag !== "string") return;
+      // Same race as crewCreate: queue this player before flushing.
+      this.persist(client.sessionId);
       await this.ledger.flush().catch(() => {});
       const result = await this.crews.join(deviceId, tag);
       client.send("crewResult", result);
@@ -444,8 +459,32 @@ export class CityRoom extends Room<CityState> {
          * — cancelling the payment and handing the floor back, so the buyer has
          * paid for a floor that now exists twice.
          */
-        await this.reloadPlayer(deviceId);
-        if (result.sellerDevice) await this.reloadPlayer(result.sellerDevice);
+        /**
+         * Apply the balances the transaction itself produced.
+         *
+         * Re-reading them is a second round trip, and the periodic flusher can
+         * fire inside it and write a stale in-memory balance over the settled
+         * trade — which is exactly what happened once accrual began marking
+         * players dirty every five seconds instead of every thirty. Floors still
+         * need a reload; the balance does not.
+         */
+        this.applyBalance(deviceId, result.buyerBlock);
+        if (result.sellerDevice) this.applyBalance(result.sellerDevice, result.sellerBlock);
+
+        await this.reloadPlayer(deviceId, { keepBalance: true });
+        if (result.sellerDevice) {
+          await this.reloadPlayer(result.sellerDevice, { keepBalance: true });
+        }
+
+        /**
+         * Deliberately NOT flushing here.
+         *
+         * Flushing immediately after a trade writes the queue as it stands — and
+         * the queue still holds the pre-trade FLOOR counts for both parties,
+         * which land on top of the transfer and hand the seller their floor back
+         * while the buyer keeps theirs. The balances are already correct in
+         * memory and queued, so the ordinary flusher settles them safely.
+         */
 
         await this.refreshOwnedFloors();
         await this.publishMarket();
@@ -906,7 +945,21 @@ export class CityRoom extends Room<CityState> {
    * in this room is the correct outcome, not a failure: an offline player has
    * no memory state to correct, and will load the settled values on next join.
    */
-  private async reloadPlayer(deviceId: string) {
+  /** Set a connected player's balance and re-queue it, replacing any stale row. */
+  private applyBalance(deviceId: string, block: number) {
+    let sessionId = "";
+    this.devices.forEach((device, session) => {
+      if (device === deviceId) sessionId = session;
+    });
+    if (!sessionId) return;
+    const player = this.state.players.get(sessionId);
+    if (!player) return;
+    player.block = block;
+    // Overwrites the queued entry for this device, which is keyed by device id.
+    this.persist(sessionId);
+  }
+
+  private async reloadPlayer(deviceId: string, opts: { keepBalance?: boolean } = {}) {
     let sessionId = "";
     this.devices.forEach((device, session) => {
       if (device === deviceId) sessionId = session;
@@ -919,11 +972,22 @@ export class CityRoom extends Room<CityState> {
     const saved = await this.store.loadPlayer(deviceId);
     if (!saved) return;
 
-    player.block = saved.block;
+    if (!opts.keepBalance) player.block = saved.block;
     player.floors.clear();
     for (const [symbol, count] of Object.entries(saved.floors)) {
       if (count > 0) player.floors.set(symbol, count);
     }
+
+    /**
+     * Re-queue AFTER the floors are correct.
+     *
+     * `persist` snapshots `player.floors` as it stands, so anything queued
+     * before this reload holds the pre-trade counts. Left there, the next flush
+     * writes them back over the settled transfer — handing the seller their
+     * floor back while the buyer keeps theirs. Queuing again replaces that entry
+     * with the true state.
+     */
+    this.persist(sessionId);
   }
 
   /** Mirror open listings into replicated state. */

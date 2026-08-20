@@ -30,7 +30,23 @@ export interface Listing {
 
 export type ListResult = { ok: true; id: number } | { ok: false; reason: string };
 export type BuyResult =
-  | { ok: true; symbol: string; price: number; sellerName: string; sellerDevice: string }
+  | {
+      ok: true;
+      symbol: string;
+      price: number;
+      sellerName: string;
+      sellerDevice: string;
+      /**
+       * Authoritative balances, straight out of the settling transaction.
+       *
+       * The room used to re-read these from the database afterwards, which is a
+       * second round trip the periodic flusher can slip inside — writing a stale
+       * in-memory balance over the settled trade. Returning them here means the
+       * room can apply the true values without asking again.
+       */
+      buyerBlock: number;
+      sellerBlock: number;
+    }
   | { ok: false; reason: string };
 
 export class MarketService {
@@ -251,6 +267,8 @@ export class MarketService {
           // the seller is online, their in-memory balance and floors are now
           // stale, and the next flush would write them back over this trade.
           sellerDevice: sellerAfter?.device_id ?? "",
+          buyerBlock: Number(buyerAfter?.block ?? 0),
+          sellerBlock: Number(sellerAfter?.block ?? 0),
         };
       })
       .catch((err): BuyResult => {

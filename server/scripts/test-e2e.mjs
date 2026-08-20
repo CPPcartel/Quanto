@@ -21,6 +21,24 @@ const check = (label, cond, detail = "") => {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Wait for a condition instead of guessing at a duration.
+ *
+ * A settled trade reaches replicated state in stages: the balances are set in
+ * memory immediately, but the floors and the listing follow two database round
+ * trips. Against a local database those land inside a fixed sleep; against a
+ * managed one in another region they do not, and the test then reports a
+ * product failure when what it actually measured was the network.
+ */
+const waitUntil = async (fn, ms = 8000) => {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (fn()) return true;
+    await sleep(100);
+  }
+  return false;
+};
+
 /** Wait for a named message, or reject so a hang fails loudly instead of stalling. */
 function next(room, type, ms = 8000) {
   return new Promise((resolve, reject) => {
@@ -59,9 +77,15 @@ bob.send("setName", "Bob");
 await sleep(300);
 
 console.log("\n[2] buying a floor");
-// Pick the cheapest tower so the starting grant definitely covers it.
+// Pick the cheapest tower that still has a floor free.
+//
+// The affordability filter alone was enough against a database this script
+// resets between runs. Against a shared one it is not: every run buys a floor
+// and never sells it back, so the cheapest tower fills up and the run after
+// that fails with "fully leased" — a fixture running out of room, reported as
+// if the product were broken.
 const towers = [...alice.state.tickers.values()]
-  .filter((t) => t.floorPrice > 0)
+  .filter((t) => t.floorPrice > 0 && t.ownedFloors < t.totalFloors)
   .sort((a, b) => a.floorPrice - b.floorPrice);
 const target = towers[0];
 check("found a purchasable tower", !!target, target ? `${target.symbol} @ ${target.floorPrice}` : "none");
@@ -148,7 +172,16 @@ bob.send("buyListing", visible[0].id);
 const traded = await next(bob, "buyListingResult");
 check("trade settled", traded.ok, JSON.stringify(traded));
 
-await sleep(900);
+// Everything the trade touches, settled: both balances, both floor counts and
+// the listing's removal.
+const settled = () =>
+  Math.round(bobBefore - bob.state.players.get(bob.sessionId).block) === 60 &&
+  Math.round(alice.state.players.get(alice.sessionId).block - aliceBefore) === 60 &&
+  (bob.state.players.get(bob.sessionId).floors.get(target.symbol) ?? 0) >= 1 &&
+  (alice.state.players.get(alice.sessionId).floors.get(target.symbol) ?? 0) === 0 &&
+  bob.state.listings.size === 0;
+await waitUntil(settled);
+
 const bobAfter = bob.state.players.get(bob.sessionId).block;
 const aliceAfter = alice.state.players.get(alice.sessionId).block;
 check("buyer debited 60", Math.round(bobBefore - bobAfter) === 60, `${bobBefore} -> ${bobAfter}`);
@@ -160,6 +193,10 @@ check(
   `alice still has ${alice.state.players.get(alice.sessionId).floors.get(target.symbol)}`
 );
 check("listing cleared from state", bob.state.listings.size === 0, `size=${bob.state.listings.size}`);
+
+await waitUntil(
+  () => bob.state.tickers.get(target.symbol).ownedFloors === baseOccupancy + 1
+);
 
 console.log("\n[6] the tower did not lose or gain floors in the trade");
 await sleep(400);

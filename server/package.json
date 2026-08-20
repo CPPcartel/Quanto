@@ -14,7 +14,8 @@
     "test": "npm run build && node scripts/test-db.mjs && node scripts/test-territory.mjs && node scripts/test-market.mjs && node scripts/test-parks.mjs && node scripts/test-charge.mjs && node scripts/test-city-overlap.mjs && node scripts/test-shifts.mjs && node scripts/test-nft.mjs && node scripts/test-club.mjs && node scripts/test-chat.mjs && node scripts/test-messages.mjs && node scripts/test-ledger-sync.mjs",
     "test:messages": "npm run build && node scripts/test-messages.mjs",
     "test:messages:live": "node scripts/test-messages-live.mjs",
-    "repair:balances": "node scripts/repair-balances.mjs"
+    "repair:balances": "node scripts/repair-balances.mjs",
+    "db:purge-test": "node scripts/purge-test-data.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.16.25",

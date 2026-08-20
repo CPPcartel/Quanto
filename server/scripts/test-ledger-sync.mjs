@@ -105,5 +105,45 @@ const healed = await read();
 check("queueing the balance repairs it", Math.abs(healed.block - healed.ledger) < 0.0001,
   `block ${healed.block.toFixed(4)} vs ledger ${healed.ledger.toFixed(4)}`);
 
+console.log("\n[4] awaiting a flush guarantees the write, even during another flush");
+/**
+ * `await flush()` used to return immediately when a write was already in
+ * flight — no wait, and no write of the caller's rows. Anything awaiting it for
+ * a guarantee (founding a crew needs the player row to exist; /audit compares
+ * balances it has just settled) silently got neither.
+ *
+ * Invisible against a local database that flushes in microseconds. A real fault
+ * against managed Postgres in another region, where a write takes hundreds of
+ * milliseconds and the periodic flusher is often mid-transaction.
+ */
+const CONCURRENT = "sync-bob";
+const bob = { block: 0, charge: 100, shards: 0 };
+const markBob = () =>
+  ledger.markPlayer({
+    deviceId: CONCURRENT, wallet: null, name: "Bob", color: "#fff",
+    block: bob.block, charge: bob.charge, shards: bob.shards, x: 0, z: 0,
+  });
+
+// Start a flush without awaiting it, then queue new data and flush again —
+// exactly the shape of a player acting while the periodic flusher runs.
+ledger.post(DEVICE, player, "floor_yield", 1);
+mark();
+const inFlight = ledger.flush();
+
+ledger.post(CONCURRENT, bob, "signup_grant", 500);
+markBob();
+await ledger.flush();
+await inFlight;
+
+const bobRows = await db.query(
+  "SELECT block::float8 AS block FROM players WHERE device_id = $1",
+  [CONCURRENT]
+);
+check(
+  "a player queued during another flush is written",
+  bobRows.length === 1 && Math.abs(Number(bobRows[0].block) - 500) < 0.0001,
+  bobRows.length ? `block ${Number(bobRows[0].block).toFixed(4)}` : "no row written at all"
+);
+
 console.log(`\n${fails === 0 ? "ALL LEDGER SYNC CHECKS PASSED" : fails + " FAILED"}\n`);
 process.exit(fails ? 1 : 0);
