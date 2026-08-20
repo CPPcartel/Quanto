@@ -21,7 +21,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
         <header className="docs-head">
           <div>
             <p className="wallet-label">HANDBOOK</p>
-            <h2>Candlestick City</h2>
+            <h2>Quanto</h2>
           </div>
           <button className="link" onClick={onClose}>
             close (esc)

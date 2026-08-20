@@ -1,0 +1,31 @@
+{
+  "fps": 30,
+  "cuts": {
+    "vertical": {
+      "bpm": 124,
+      "beats": {
+        "hook": 8,
+        "skyline": 10,
+        "oracle": 8,
+        "live": 6,
+        "cta": 7
+      }
+    },
+    "landscape": {
+      "bpm": 128,
+      "beats": {
+        "cold": 4,
+        "skyline": 8,
+        "economy": 14,
+        "crews": 8,
+        "storm": 8,
+        "collection": 10,
+        "identity": 8,
+        "door": 6,
+        "vault": 12,
+        "events": 8,
+        "cta": 8
+      }
+    }
+  }
+}

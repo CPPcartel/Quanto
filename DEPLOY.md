@@ -1,4 +1,4 @@
-# Deploying Candlestick City
+# Deploying Quanto
 
 ## The constraint that decides the architecture
 
@@ -35,7 +35,7 @@ cd server
    | Variable | Value |
    |---|---|
    | `DATA_DIR` | `/data` |
-   | `ALLOWED_ORIGIN` | your Vercel URL, e.g. `https://candlestick.vercel.app` |
+   | `ALLOWED_ORIGIN` | your Vercel URL, e.g. `https://quanto.vercel.app` |
    | `MAX_PLAYERS` | `150` |
 
    Don't set `PORT` — Railway injects it.

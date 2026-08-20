@@ -1,6 +1,6 @@
-# Candlestick Residents
+# Quanto Residents
 
-The pixel NFT collection for Candlestick City. 3,338 tokens across three tiers.
+The pixel NFT collection for Quanto. 3,338 tokens across three tiers.
 
 ```
 npm run preview   # 50 tokens into preview/out — for eyeballing

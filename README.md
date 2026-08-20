@@ -1,4 +1,4 @@
-# Candlestick City
+# Quanto
 
 A multiplayer isometric pixel city where **every building's height is a real, live share price**,
 read from Chainlink feeds on [Robinhood Chain](https://docs.robinhood.com/chain/) (chain `4663`).
@@ -9,7 +9,7 @@ the actual market.
 client/      React + PixiJS v8  — isometric renderer, HUD
 server/      Colyseus            — authoritative game server, Chainlink oracle, Postgres
 contracts/   Hardhat + Solidity  — $BLOCK, floor deeds, oracle router, city controller
-collection/  Node                — generator for the Candlestick Residents NFT art
+collection/  Node                — generator for the Quanto Residents NFT art
 ```
 
 ---

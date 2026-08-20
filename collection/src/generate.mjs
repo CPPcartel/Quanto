@@ -5,7 +5,7 @@ import { resolve, TRAIT_SLOTS, TRAIT_NAMES } from "./traits.mjs";
 import { TICKERS } from "../../server/dist/config/tickers.js";
 
 /**
- * Generate the Candlestick Residents collection.
+ * Generate the Quanto Residents collection.
  *
  *   npm run preview   50 tokens, for eyeballing
  *   npm run build     the full 3,338
@@ -25,13 +25,13 @@ const SEED = 0x0ca11ed;
 /** Output resolution. 32x32 logical, scaled 32x for marketplace thumbnails. */
 const SCALE = 32;
 
-const COLLECTION = "Candlestick Residents";
+const COLLECTION = "Quanto Residents";
 const DESCRIPTION =
-  "A resident of Candlestick City — a live isometric city on Robinhood Chain where " +
+  "A resident of Quanto — a live isometric city on Robinhood Chain where " +
   "every building's height is a real stock price. Your traits render on your character " +
   "in-game. No tier pays $BLOCK; identity, access and cosmetics only.";
 
-const EXTERNAL = "https://candlestick.city";
+const EXTERNAL = "https://quanto.city";
 
 // ---------------------------------------------------------------------------
 

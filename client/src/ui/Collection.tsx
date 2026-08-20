@@ -11,7 +11,7 @@ import { describeTraits } from "../pixi/traits";
  * a Discord argument.
  */
 
-const COLLECTION_URL = "https://opensea.io/collection/candlestick-residents";
+const COLLECTION_URL = "https://opensea.io/collection/quanto-residents";
 
 const TIERS = [
   {
@@ -41,35 +41,18 @@ const TIERS = [
   },
 ] as const;
 
-export function CollectionPanel() {
+export function CollectionPanelBody({ onClose }: { onClose: () => void }) {
   useSyncExternalStore(subscribeUi, getUiVersion);
-  const [open, setOpen] = useState(false);
 
   const tier = world.localTier;
   const holding = tier !== "none";
   const current = TIERS.find((t) => t.id === tier);
 
-  if (!open) {
-    return (
-      <div className="hud collection-launcher">
-        <button className="crew-chip" onClick={() => setOpen(true)}>
-          <span
-            className="crew-dot"
-            style={{ background: current?.color ?? "var(--panel-border)" }}
-          />
-          <span className="mono">{holding ? current?.label.toUpperCase() : "RESIDENTS"}</span>
-          {!holding && <span className="dim tiny">not held</span>}
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="hud collection-launcher">
-      <div className="panel compact collection-panel">
+    <>
         <div className="crew-head">
-          <span className="wallet-label">CANDLESTICK RESIDENTS</span>
-          <button className="link tiny" onClick={() => setOpen(false)}>
+          <span className="wallet-label">QUANTO RESIDENTS</span>
+          <button className="link tiny" onClick={onClose}>
             close
           </button>
         </div>
@@ -133,7 +116,6 @@ export function CollectionPanel() {
         <a className="primary-btn tier-link" href={COLLECTION_URL} target="_blank" rel="noreferrer">
           View on OpenSea
         </a>
-      </div>
-    </div>
+    </>
   );
 }

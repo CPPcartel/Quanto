@@ -22,7 +22,18 @@ const MAX_LEN = 200;
 /** A player may not send the same text twice within this window. */
 const REPEAT_MS = 20_000;
 
-export type Channel = "local" | "district";
+/**
+ * Where a message goes.
+ *
+ * `local` and `district` are about WHERE you are; `crew` is about who you are
+ * with. That difference matters — crew is the only channel that reaches across
+ * the map, which is the point of belonging to one.
+ *
+ * There is still deliberately no global channel. It is the one that needs
+ * moderation on day one, and a city where every message reaches everyone stops
+ * feeling like a place.
+ */
+export type Channel = "local" | "district" | "crew";
 
 export interface ChatMessage {
   from: string;
@@ -106,7 +117,8 @@ export class ChatService {
     const text = sanitise(String(body.text ?? ""));
     if (!text) return null;
 
-    const channel: Channel = body.channel === "district" ? "district" : "local";
+    const channel: Channel =
+      body.channel === "district" ? "district" : body.channel === "crew" ? "crew" : "local";
 
     const now = Date.now();
     const state = this.recent.get(sessionId) ?? {
@@ -151,6 +163,23 @@ export class ChatService {
     const sender = state.players.get(senderId);
     if (!sender) return [];
 
+    /**
+     * Crew reaches every online member, at any distance.
+     *
+     * Matched on the tag carried on the player schema rather than by asking the
+     * database — membership is already replicated for the nameplate, so this
+     * costs nothing and cannot disagree with what players can see.
+     */
+    if (channel === "crew") {
+      const tag = sender.crewTag;
+      if (!tag) return [];
+      const out: string[] = [];
+      state.players.forEach((p: Player, id: string) => {
+        if (p.crewTag === tag) out.push(id);
+      });
+      return out;
+    }
+
     if (channel === "district") {
       const district = districtAt(state, sender.x, sender.z);
       const out: string[] = [];
@@ -182,9 +211,11 @@ export class ChatService {
   log(deviceId: string, msg: ChatMessage, x: number, z: number) {
     this.db
       .query(
-        `INSERT INTO chat_log (device_id, name, channel, text, x, z)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [deviceId, msg.name, msg.channel, msg.text, x, z]
+        // crew_tag is what makes crew history queryable at all — without it the
+        // messages are on disk but there is no way to ask which crew said them.
+        `INSERT INTO chat_log (device_id, name, channel, text, x, z, crew_tag)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [deviceId, msg.name, msg.channel, msg.text, x, z, msg.crewTag || null]
       )
       .catch((err) => console.error("[chat] log failed:", err?.message ?? err));
   }

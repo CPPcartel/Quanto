@@ -1,4 +1,4 @@
-import { Room, Client } from "@colyseus/core";
+import { Room, Client, ServerError } from "@colyseus/core";
 import {
   CityState,
   Player,
@@ -13,6 +13,7 @@ import { DISTRICTS, TICKERS, layoutFor } from "../config/tickers.js";
 import { parkLots, parkAt, CLUB } from "../config/parks.js";
 import type { ChainlinkPoller } from "../oracle/ChainlinkPoller.js";
 import { accrue, buyFloor, initPlayerEconomy, refreshTickerEconomics } from "../game/floors.js";
+import type { PrivyIdentity } from "../game/privy.js";
 import { ShiftService } from "../game/shifts.js";
 import { StormService } from "../game/storms.js";
 import { SignService, SIGN_BLOCK_COST } from "../game/signs.js";
@@ -27,11 +28,12 @@ import { CrewService } from "../game/crews.js";
 import { MarketService } from "../game/market.js";
 import { NftService, type Tier } from "../game/nft.js";
 import { ClubService, EVENT_LABEL } from "../game/club.js";
+import { MessageService } from "../game/messages.js";
 import type { Db } from "../db/db.js";
 import { CHARGE_MAX, STARTING_BLOCK } from "../game/economy.js";
 
 /**
- * Authoritative simulation for one district instance of Candlestick City.
+ * Authoritative simulation for one district instance of Quanto.
  *
  * Movement rule (unchanged from the 2D prototype, now in 3D): clients send
  * *inputs*, never positions. The server integrates them on a fixed tick and
@@ -68,7 +70,47 @@ export interface InputCommand {
   yaw: number;
 }
 
+/**
+ * Whether a verified account is required to enter.
+ *
+ * Defaults to ON. Guest play was the original design — zero friction, and an
+ * income floor for people who never spend anything — but a city where every
+ * resident is anonymous and free to re-roll cannot support identity, crews or
+ * a holders-only venue. Set REQUIRE_AUTH=false only for local development.
+ */
+const REQUIRE_AUTH = (process.env.REQUIRE_AUTH ?? "true").toLowerCase() !== "false";
+
 export class CityRoom extends Room<CityState> {
+  /**
+   * The door.
+   *
+   * Runs before a Player exists, so a rejected connection costs nothing and
+   * never appears in the world. The verified identity is returned, which
+   * Colyseus assigns to `client.auth` — so `onJoin` trusts that rather than
+   * re-verifying a token it has already checked.
+   *
+   * A client claiming a DID proves nothing; only a token Privy's API validates
+   * counts. That check is the whole security boundary for accounts.
+   */
+  async onAuth(client: Client, options?: { deviceId?: string; privyToken?: string }) {
+    if (!REQUIRE_AUTH) return true;
+
+    if (!this.privy.enabled) {
+      /**
+       * Fail closed, loudly.
+       *
+       * Requiring auth while no verifier is configured must never quietly fall
+       * back to letting everyone in — that is the failure that looks like it is
+       * working right up until it matters.
+       */
+      throw new ServerError(503, "Accounts are not configured on this server.");
+    }
+
+    const identity = options?.privyToken ? await this.privy.verify(options.privyToken) : null;
+    if (!identity) throw new ServerError(401, "Sign in to enter the city.");
+    return identity;
+  }
+
   /**
    * Everyone should share one city, so this is set well above the expected
    * player count rather than at a comfortable per-room number.
@@ -103,6 +145,7 @@ export class CityRoom extends Room<CityState> {
   private market!: MarketService;
   private nft!: NftService;
   private club = new ClubService();
+  private messages!: MessageService;
   /** sessionId -> persistent device id, for saving progress. */
   private devices = new Map<string, string>();
 
@@ -125,6 +168,7 @@ export class CityRoom extends Room<CityState> {
     this.crews = new CrewService(options.db);
     this.market = new MarketService(options.db);
     this.nft = new NftService(options.db);
+    this.messages = new MessageService(options.db);
     this.setState(new CityState());
     this.seedCity();
     // Async, and deliberately not awaited: the room must accept connections
@@ -208,6 +252,105 @@ export class CityRoom extends Room<CityState> {
       if (deviceId) this.chat.log(deviceId, message, player.x, player.z);
     });
 
+    // ---- direct messages ----------------------------------------------------
+    /**
+     * Addressed by SESSION, resolved to a device here.
+     *
+     * A device id is the guest identity — `onJoin` trusts it — so one must never
+     * reach a client. Letting the sender name a session and resolving it
+     * server-side keeps the mapping private while still allowing a DM to reach
+     * somebody who has since gone offline.
+     */
+    this.onMessage(
+      "dmSend",
+      async (client, msg: { to?: string; handle?: string; text?: string }) => {
+        const fromDevice = this.devices.get(client.sessionId);
+        const player = this.state.players.get(client.sessionId);
+        if (!fromDevice || !player) return;
+
+        /**
+         * Two ways to name a recipient, and neither is a device id.
+         *
+         * `to` is a session — how you start a conversation with somebody you can
+         * see. `handle` is the opaque id from your own inbox — how you reply to a
+         * conversation you already have, whether or not they are still online. A
+         * reply that only worked while the other person happened to be logged in
+         * would make the stored history pointless.
+         */
+        const toDevice = msg?.to
+          ? (this.devices.get(String(msg.to)) ?? "")
+          : await this.messages.resolveHandle(fromDevice, String(msg?.handle ?? ""));
+
+        if (!toDevice) {
+          client.send("dmResult", { ok: false, reason: "Nobody by that name." });
+          return;
+        }
+
+        const result = await this.messages.send(
+          fromDevice,
+          player.name,
+          toDevice,
+          msg?.text ?? ""
+        );
+
+        // Only `ok` and `reason` go back. `delivered` would tell a sender they
+        // have been blocked, which is the one thing blocking must not announce.
+        client.send(
+          "dmResult",
+          result.ok ? { ok: true, at: result.at } : { ok: false, reason: result.reason }
+        );
+        if (!result.ok || !result.delivered) return;
+
+        // Deliver live if they are still connected; otherwise it waits in the
+        // database and arrives with their unread count on next join.
+        //
+        // The forwarded text is what was *stored*, not what arrived — sanitising
+        // one copy and not the other would let control characters reach whoever
+        // happened to be online while the saved history stayed clean.
+        const target = this.clients.find(
+          (c) => this.devices.get(c.sessionId) === toDevice
+        );
+        target?.send("dmIncoming", {
+          fromSession: client.sessionId,
+          // The sender's conversation handle, as the *recipient* addresses them.
+          // Without it the client has to match an arriving message to an open
+          // thread by display name, and two players may share one.
+          handle: this.messages.handleFor(fromDevice),
+          fromName: player.name,
+          text: result.text,
+          at: result.at,
+        });
+        void this.pushInbox(target);
+        void this.pushInbox(client);
+      }
+    );
+
+    this.onMessage("dmThreads", async (client) => {
+      await this.pushInbox(client);
+    });
+
+    this.onMessage("dmThread", async (client, handle: string) => {
+      const device = this.devices.get(client.sessionId);
+      if (!device || typeof handle !== "string") return;
+      // The handle only resolves for someone this player has already messaged,
+      // so a forged one reaches nobody new.
+      const other = await this.messages.resolveHandle(device, handle);
+      if (!other) return;
+      const lines = await this.messages.thread(device, other);
+      client.send("dmThread", { device: handle, lines });
+      await this.pushInbox(client);
+    });
+
+    this.onMessage("dmBlock", async (client, msg: { device?: string; block?: boolean }) => {
+      const device = this.devices.get(client.sessionId);
+      if (!device || !msg?.device) return;
+      const other = await this.messages.resolveHandle(device, msg.device);
+      if (!other) return;
+      if (msg.block === false) await this.messages.unblock(device, other);
+      else await this.messages.block(device, other);
+      await this.pushInbox(client);
+    });
+
     // ---- crews -------------------------------------------------------------
     this.onMessage(
       "crewCreate",
@@ -244,6 +387,7 @@ export class CityRoom extends Room<CityState> {
       if (result.ok) {
         this.applyCrew(client.sessionId, result.crew.tag, result.crew.color);
         this.sendCrew(client, deviceId);
+        this.sendCrewHistory(client, result.crew.tag);
       }
     });
 
@@ -497,11 +641,26 @@ export class CityRoom extends Room<CityState> {
         }
 
         this.ledger.post(deviceId, player, "floor_yield", earned - royaltiesOwed);
+
+        /**
+         * Queue the balance in the SAME batch as the ledger row.
+         *
+         * `post` credits the in-memory balance and records the entry, but it
+         * does not mark the row dirty — that was left to a 30-second sweep. So
+         * for up to thirty seconds the database held ledger rows whose credit
+         * was not in any balance, and a restart in that window froze the
+         * difference permanently: the player quietly lost the yield, and
+         * `/audit` reported a drift that could never resolve. Marking here
+         * closes the window to one flush.
+         */
+        this.persist(sessionId);
       }
 
       for (const { sessionId, player, amount } of this.signs.payTraffic(this.state)) {
         const deviceId = this.devices.get(sessionId);
-        if (deviceId) this.ledger.post(deviceId, player, "sign_traffic", amount);
+        if (!deviceId) continue;
+        this.ledger.post(deviceId, player, "sign_traffic", amount);
+        this.persist(sessionId);
       }
     }, 5_000);
 
@@ -535,6 +694,7 @@ export class CityRoom extends Room<CityState> {
       this.auth.sweep();
       this.shifts.sweep();
       this.nft.sweep();
+      this.messages.sweep();
     }, 60_000);
 
     // Emotes are cleared server-side so a disconnect can't leave one stuck
@@ -656,12 +816,55 @@ export class CityRoom extends Room<CityState> {
       .catch((err) => console.warn("[nft] tier resolution failed:", err?.message ?? err));
   }
 
+  /**
+   * Push the player's conversation list and unread count.
+   *
+   * Threads carry the other party's device id, which is theirs and not the
+   * recipient's own identity — it is only useful for addressing a reply, and the
+   * server re-checks every send anyway.
+   */
+  private async pushInbox(client?: Client) {
+    if (!client) return;
+    const device = this.devices.get(client.sessionId);
+    if (!device) return;
+    try {
+      const [threads, unread] = await Promise.all([
+        this.messages.threads(device),
+        this.messages.unreadCount(device),
+      ]);
+      client.send("dmInbox", { threads, unread });
+    } catch (err) {
+      console.warn("[dm] inbox failed:", (err as Error)?.message ?? err);
+    }
+  }
+
   /** Reflect a crew change on the player so others see the tag immediately. */
   private applyCrew(sessionId: string, tag: string, color: string) {
     const player = this.state.players.get(sessionId);
     if (!player) return;
     player.crewTag = tag;
     player.crewColor = color;
+  }
+
+  /**
+   * Replay what the crew has been saying.
+   *
+   * This is the difference between the two kinds of channel. Proximity and
+   * district chat are correctly ephemeral — you had to be standing there. A crew
+   * is about who you are with, not where you stand, so a line posted while you
+   * were asleep has to still be there when you come back.
+   *
+   * Fire-and-forget: scrollback failing is a worse-looking room, not a broken
+   * one, and joining must not wait on a query.
+   */
+  private sendCrewHistory(client: Client, crewTag: string) {
+    if (!crewTag) return;
+    this.messages
+      .crewHistory(crewTag)
+      .then((lines) => {
+        if (lines.length) client.send("crewHistory", lines);
+      })
+      .catch((err) => console.warn("[chat] crew history failed:", err?.message ?? err));
   }
 
   /**
@@ -954,8 +1157,16 @@ export class CityRoom extends Room<CityState> {
      * logging in is lost.
      */
     let deviceId = guestId;
-    if (options?.privyToken && this.privy.enabled) {
-      const identity = await this.privy.verify(options.privyToken);
+    /**
+     * `onAuth` has already verified the token and stashed the identity, so this
+     * neither re-verifies nor re-hits Privy's API on every join. When auth is
+     * disabled for local development `client.auth` is `true` rather than an
+     * identity, hence the shape check.
+     */
+    const verified =
+      client.auth && typeof client.auth === "object" ? (client.auth as PrivyIdentity) : null;
+    {
+      const identity = verified;
       if (identity) {
         deviceId = await linkPrivyAccount(this.db, identity, guestId || `privy:${identity.did}`);
         player.wallet = identity.embeddedWallet ?? identity.wallets[0] ?? "";
@@ -998,6 +1209,11 @@ export class CityRoom extends Room<CityState> {
         player.crewColor = crew.color;
       }
       this.sendCrew(client, deviceId);
+      this.sendCrewHistory(client, player.crewTag);
+
+      // Anything sent while they were away. A DM that only arrives if you happen
+      // to be online is not a direct message.
+      void this.pushInbox(client);
 
       // Re-link any signs this device owns so traffic pays the right person.
       for (const sign of await this.store.allSigns()) {
@@ -1014,6 +1230,20 @@ export class CityRoom extends Room<CityState> {
     }
 
     this.persist(client.sessionId);
+  }
+
+  /**
+   * Settle everyone before the room disappears.
+   *
+   * Colyseus disposes a room on the last leave and on shutdown. Without this the
+   * final ledger flush can write entries whose balances were never queued, which
+   * is the same drift as above but guaranteed rather than raced.
+   */
+  async onDispose() {
+    this.state.players.forEach((_p, sessionId) => this.persist(sessionId));
+    await this.ledger.flush().catch((err) =>
+      console.error("[room] final flush failed:", err?.message ?? err)
+    );
   }
 
   onLeave(client: Client) {

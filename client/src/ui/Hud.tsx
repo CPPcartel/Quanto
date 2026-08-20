@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useEffect, useState } from "react";
+import { useSyncExternalStore, useEffect, useState, useRef } from "react";
 import { world, subscribeUi, getUiVersion, type TickerView } from "../net/world";
 import {
   setName,
@@ -20,9 +20,7 @@ import { AccountPanel } from "./Account";
 import { privyEnabled } from "../auth/PrivyGate";
 import { Docs } from "./Docs";
 import { ChatPanel } from "./Chat";
-import { CrewPanel } from "./Crew";
-import { MarketPanel } from "./Market";
-import { CollectionPanel } from "./Collection";
+import { Dock, type DockHandle } from "./Dock";
 import { ClubBanner, ClubDoor, ClubAudioToggle } from "./Club";
 
 const SIGN_COLORS = ["#22E8FF", "#FF2D95", "#FFB347", "#3BFF8F", "#A855F7"];
@@ -35,6 +33,7 @@ function useWorld() {
 
 export function Hud() {
   const w = useWorld();
+  const dock = useRef<DockHandle>(null);
 
   if (w.debug.fatal) {
     return (
@@ -69,7 +68,7 @@ export function Hud() {
     return (
       <div className="overlay center">
         <div className="panel">
-          <h2>Entering Candlestick City…</h2>
+          <h2>Entering Quanto…</h2>
           <p className="dim">Connecting to the game server</p>
         </div>
       </div>
@@ -93,13 +92,13 @@ export function Hud() {
           sign-a-message panel remains the fallback for guest-only builds. */}
       {privyEnabled ? <AccountPanel /> : <WalletPanel />}
       <Leaderboard />
-      <CrewPanel />
-      <MarketPanel />
-      <CollectionPanel />
+      <Dock ref={dock} />
       <ClubBanner />
       <ClubDoor />
       <ClubAudioToggle />
-      <ChatPanel />
+      {/* Clicking a name in chat opens a conversation with them in the dock,
+          rather than adding a fifth floating panel to the middle of the screen. */}
+      <ChatPanel onWhisper={(session, name) => dock.current?.whisper(session, name)} />
       <HelpButton />
     </>
   );
@@ -498,7 +497,7 @@ function TopLeft() {
           </span>
         </div>
 
-        <h1>{district?.name ?? "Candlestick City"}</h1>
+        <h1>{district?.name ?? "Quanto"}</h1>
         <p className="dim small">{district?.blurb ?? "A city built from live market data."}</p>
 
         <dl className="stats">

@@ -3,7 +3,7 @@ import type { Db } from "../db/db.js";
 import { encodeAttributes, DEFAULT_TRAIT_CODE, type MetadataAttribute } from "../config/traits.js";
 
 /**
- * Candlestick Residents — the NFT collection, read from Robinhood Chain.
+ * Quanto Residents — the NFT collection, read from Robinhood Chain.
  *
  * The collection contract is deployed by OpenSea Studio, so we do not own it and
  * cannot add hooks to it. Everything here therefore works from a plain ERC-721

@@ -1,0 +1,28 @@
+{
+  "name": "quanto-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Promo b-roll for Quanto. The city is rebuilt natively in Remotion from the game's own isometric projection and real Chainlink prices.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "audio": "node scripts/gen-audio.mjs",
+    "render": "remotion render src/index.ts QuantoPromo out/quanto.mp4 --codec h264 --crf 16",
+    "render:square": "remotion render src/index.ts QuantoPromoSquare out/quanto-square.mp4 --codec h264 --crf 16",
+    "render:landscape": "node scripts/gen-audio.mjs landscape && remotion render src/index.ts QuantoLandscape out/quanto-landscape.mp4 --codec h264 --crf 16",
+    "audio:landscape": "node scripts/gen-audio.mjs landscape"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.513",
+    "@remotion/google-fonts": "^4.0.513",
+    "@remotion/motion-blur": "^4.0.513",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "remotion": "^4.0.513"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "playwright-core": "^1.62.1",
+    "typescript": "^7.0.2"
+  }
+}

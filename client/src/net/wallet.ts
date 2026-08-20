@@ -100,7 +100,7 @@ export async function connectWallet(nonce: string): Promise<SignedProof> {
   const client = createWalletClient({ chain: robinhoodChain, transport: custom(eth) });
 
   const message = [
-    "Sign in to Candlestick City",
+    "Sign in to Quanto",
     "",
     "This proves you own this wallet.",
     "It costs no gas and authorises no transactions.",

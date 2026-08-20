@@ -38,6 +38,34 @@ app.use((req, res, next) => {
 
 const httpServer = createServer(app);
 
+/**
+ * Refuse to start in a configuration nobody can log into.
+ *
+ * With REQUIRE_AUTH on and no Privy credentials, every single join would be
+ * rejected — a server that is up, healthy and completely unusable. Far better
+ * to fail at boot with the reason than to serve a city no one can enter.
+ */
+const REQUIRE_AUTH = (process.env.REQUIRE_AUTH ?? "true").toLowerCase() !== "false";
+if (REQUIRE_AUTH && !(process.env.PRIVY_APP_ID && process.env.PRIVY_APP_SECRET)) {
+  console.error(
+    [
+      "",
+      "Quanto cannot start: accounts are required but not configured.",
+      "",
+      "  REQUIRE_AUTH is on, so every player must sign in — but PRIVY_APP_ID",
+      "  and PRIVY_APP_SECRET are unset, so no sign-in can be verified and",
+      "  every join would be refused.",
+      "",
+      "  Fix it one of two ways:",
+      "    1. Create a free app at privy.io and set PRIVY_APP_ID +",
+      "       PRIVY_APP_SECRET here, and VITE_PRIVY_APP_ID on the client.",
+      "    2. Set REQUIRE_AUTH=false to allow guest play (local development).",
+      "",
+    ].join(String.fromCharCode(10))
+  );
+  process.exit(1);
+}
+
 const poller = new ChainlinkPoller();
 
 // Wired up in boot(), once the database is open and migrated.
@@ -210,7 +238,7 @@ async function boot() {
   startChatRetention();
 
   httpServer.listen(port, () => {
-    console.log(`Candlestick City game server listening on ws://localhost:${port}`);
+    console.log(`Quanto game server listening on ws://localhost:${port}`);
   });
 }
 

@@ -4,6 +4,19 @@ import { connect } from "./net/connection";
 import { installInput } from "./net/input";
 import { startGame, type GameHandle } from "./pixi/app";
 import { world, markUiDirty } from "./net/world";
+import { useAccount } from "./auth/useAccount";
+import { privyEnabled } from "./auth/PrivyGate";
+import { SignInWall, SignInUnavailable } from "./ui/SignInWall";
+
+/**
+ * Whether an account is required to play.
+ *
+ * Mirrors the server's REQUIRE_AUTH, which is the actual boundary — this only
+ * decides what the player is shown. Defaults on, and turns itself off when no
+ * Privy app is configured so local development still runs.
+ */
+const requireSignIn =
+  privyEnabled && (import.meta.env.VITE_REQUIRE_AUTH ?? "true").toLowerCase() !== "false";
 
 /**
  * The socket should survive a StrictMode remount, so it is guarded at module
@@ -12,6 +25,7 @@ import { world, markUiDirty } from "./net/world";
 let socketStarted = false;
 
 export default function Game() {
+  const account = useAccount();
   const host = useRef<HTMLDivElement>(null);
 
   /**
@@ -27,13 +41,27 @@ export default function Game() {
     };
   }, []);
 
+  /**
+   * Do not open a socket until the player is signed in.
+   *
+   * The server refuses an unauthenticated join, so connecting first would just
+   * produce a failed handshake and an error the player cannot act on. Waiting
+   * for `authenticated` means the first thing an anonymous visitor sees is the
+   * sign-in panel, not a broken city.
+   *
+   * `ready` matters as much as `authenticated`: Privy reports `false` for both
+   * while it is still restoring a session, and reacting to that first frame
+   * would sign out anyone who reloads the page.
+   */
   useEffect(() => {
+    if (!account.ready) return;
+    if (requireSignIn && !account.authenticated) return;
     if (socketStarted) return;
     socketStarted = true;
     connect().catch(() => {
       /* surfaced through world.conn in the HUD */
     });
-  }, []);
+  }, [account.ready, account.authenticated]);
 
   useEffect(() => {
     const el = host.current;
@@ -75,10 +103,23 @@ export default function Game() {
     };
   }, []);
 
+  /**
+   * Two ways to end up at the wall.
+   *
+   * The expected one: this build knows accounts are required and the player is
+   * not signed in. The other: the server refused the join because it requires
+   * accounts and this client was built without `VITE_PRIVY_APP_ID` — a deploy
+   * mismatch that would otherwise present as a city that silently never loads.
+   */
+  const locked =
+    (requireSignIn && account.ready && !account.authenticated) || world.authRequired;
+
   return (
     <div className="shell">
       <div className="viewport" ref={host} />
+      {/* The HUD stays mounted so the city keeps rendering behind the wall. */}
       <Hud />
+      {locked && (privyEnabled ? <SignInWall /> : <SignInUnavailable />)}
     </div>
   );
 }

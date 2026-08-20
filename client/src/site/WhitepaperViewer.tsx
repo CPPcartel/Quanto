@@ -55,7 +55,7 @@ export function WhitepaperViewer() {
   const download = () => {
     const a = document.createElement("a");
     a.href = blobUrl || LINKS.whitepaperPdf;
-    a.download = "candlestick-city-whitepaper.pdf";
+    a.download = "quanto-whitepaper.pdf";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -67,7 +67,7 @@ export function WhitepaperViewer() {
         <a className="brand" href="/">
           <Mark size={18} />
           <span>
-            CANDLESTICK<em>CITY</em>
+            QUAN<em>TO</em>
           </span>
         </a>
 
@@ -101,7 +101,7 @@ export function WhitepaperViewer() {
         )}
 
         {state === "ready" && (
-          <iframe className="pdf-frame" src={blobUrl} title="Candlestick City Whitepaper" />
+          <iframe className="pdf-frame" src={blobUrl} title="Quanto Whitepaper" />
         )}
       </div>
     </div>

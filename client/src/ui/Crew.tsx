@@ -17,11 +17,10 @@ import { createCrew, joinCrew, leaveCrew, onCrewResult, type CrewOutcome } from 
 
 const CREW_COLORS = ["#22e8ff", "#ff2d95", "#ffb347", "#3bff8f", "#a855f7", "#ff6b6b"];
 
-export function CrewPanel() {
+export function CrewPanelBody({ onClose }: { onClose: () => void }) {
   useSyncExternalStore(subscribeUi, getUiVersion);
   const crew = world.crew;
 
-  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"join" | "create">("join");
   const [name, setName] = useState("");
   const [tag, setTag] = useState("");
@@ -38,34 +37,11 @@ export function CrewPanel() {
     return () => clearTimeout(id);
   }, [flash]);
 
-  if (!open) {
-    return (
-      <div className="hud crew-launcher">
-        <button className="crew-chip" onClick={() => setOpen(true)}>
-          {crew ? (
-            <>
-              <span className="crew-dot" style={{ background: crew.color }} />
-              <span className="mono">[{crew.tag}]</span>
-              <span className="dim tiny">{crew.floors} floors</span>
-            </>
-          ) : (
-            <>
-              <span className="crew-dot dim-dot" />
-              <span className="mono">CREW</span>
-              <span className="dim tiny">none</span>
-            </>
-          )}
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="hud crew-launcher">
-      <div className="panel compact crew-panel">
+    <>
         <div className="crew-head">
           <span className="wallet-label">CREW</span>
-          <button className="link tiny" onClick={() => setOpen(false)}>
+          <button className="link tiny" onClick={onClose}>
             close
           </button>
         </div>
@@ -176,7 +152,6 @@ export function CrewPanel() {
             {flash.ok ? `You're in [${flash.crew.tag}].` : flash.reason}
           </p>
         )}
-      </div>
-    </div>
+    </>
   );
 }

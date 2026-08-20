@@ -60,7 +60,7 @@ export function DocsPage() {
     <main className="site doc-page">
       <header className="doc-head">
         <p className="sect-num">documentation</p>
-        <h1>How Candlestick City works</h1>
+        <h1>How Quanto works</h1>
         <p className="lede">
           The complete reference: the world, the economy, the architecture, and every number
           that governs play. If you'd rather just try it, <a {...linkProps("/play")}>the city is
@@ -107,7 +107,7 @@ function useSections(): Section[] {
       body: (
         <>
           <p className="doc-lede">
-            Candlestick City runs in the browser. No download, no signup, and no wallet — click{" "}
+            Quanto runs in the browser. No download, no signup, and no wallet — click{" "}
             <a {...linkProps("/play")}>Enter the city</a> and you're in.
           </p>
           <p>

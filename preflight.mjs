@@ -36,7 +36,7 @@ const sh = (cmd, cwd = root) => {
   }
 };
 
-console.log("\n\x1b[1mCandlestick City — preflight\x1b[0m");
+console.log("\n\x1b[1mQuanto — preflight\x1b[0m");
 
 // ---------------------------------------------------------------------------
 head("1. Secrets");

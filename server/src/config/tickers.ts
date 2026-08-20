@@ -1,5 +1,5 @@
 /**
- * Ticker + district configuration for Candlestick City.
+ * Ticker + district configuration for Quanto.
  *
  * Every address here is a real Chainlink price-feed proxy deployed on
  * Robinhood Chain mainnet (chain 4663). Verified against Chainlink's

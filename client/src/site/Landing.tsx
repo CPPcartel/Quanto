@@ -97,7 +97,7 @@ export function Landing() {
           <div>
             <p>
               A price is an abstraction you read at arm's length. A city is somewhere you stand.
-              Candlestick City is the second thing wearing the first: about forty companies,
+              Quanto is the second thing wearing the first: about forty companies,
               each one a tower, each tower's height its live share price.
             </p>
             <p>

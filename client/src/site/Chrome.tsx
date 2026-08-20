@@ -24,7 +24,7 @@ export function Nav({ route }: { route: Route }) {
     <header className={`nav ${scrolled ? "nav-solid" : ""}`}>
       <a className="brand" {...linkProps("/")}>
         <Mark />
-        <span>CANDLESTICK<em>CITY</em></span>
+        <span>QUAN<em>TO</em></span>
       </a>
 
       <nav className={`nav-links ${menuOpen ? "open" : ""}`}>
@@ -97,7 +97,7 @@ export function Mark({ size = 22 }: { size?: number }) {
       height={size}
       viewBox="0 0 24 24"
       role="img"
-      aria-label="Candlestick City"
+      aria-label="Quanto"
     >
       <line x1="7" y1="2" x2="7" y2="22" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
       <rect x="4" y="7" width="6" height="12" fill="currentColor" />
@@ -214,7 +214,7 @@ export function Footer() {
         <div>
           <a className="brand" {...linkProps("/")}>
             <Mark size={18} />
-            <span>CANDLESTICK<em>CITY</em></span>
+            <span>QUAN<em>TO</em></span>
           </a>
           <p className="foot-note">
             A city built from live market data, on Robinhood Chain.

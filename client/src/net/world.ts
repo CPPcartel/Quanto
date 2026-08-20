@@ -91,6 +91,31 @@ export interface ListingView {
   mine: boolean;
 }
 
+/**
+ * One private conversation, as the inbox lists it.
+ *
+ * `device` is opaque here: the server hands back its own identifier for the
+ * other party so a thread can be reopened, and the client only ever echoes it
+ * straight back. It is not a session id and cannot be used to address anyone.
+ */
+export interface ThreadView {
+  device: string;
+  name: string;
+  lastText: string;
+  at: number;
+  unread: number;
+}
+
+/** One message inside an open conversation. */
+export interface DirectLine {
+  id: number;
+  fromName: string;
+  /** True when the local player sent it — decided server-side. */
+  mine: boolean;
+  text: string;
+  at: number;
+}
+
 /** The crew the local player belongs to, or null when unaffiliated. */
 export interface CrewView {
   name: string;
@@ -165,6 +190,14 @@ export type ConnState = "connecting" | "connected" | "error";
 export const world = {
   conn: "connecting" as ConnState,
   error: "",
+  /**
+   * The server refused the join because there is no verified account.
+   *
+   * Distinct from a general connection error: the fix is to sign in, not to
+   * check the network. It also catches the misconfiguration where the server
+   * requires accounts and the client was built without `VITE_PRIVY_APP_ID`.
+   */
+  authRequired: false,
   sessionId: "",
 
   /** Locally predicted position — what the camera follows. */
@@ -195,6 +228,18 @@ export const world = {
   listings: [] as ListingView[],
   /** The local player's crew, or null. */
   crew: null as CrewView | null,
+
+  /**
+   * Private messages.
+   *
+   * The list of conversations comes from the server on join and after every
+   * send, so scrollback survives being offline. `dmOpen` is whichever thread is
+   * on screen; it is cleared on disconnect because its contents are stale the
+   * moment identity is re-evaluated.
+   */
+  dmThreads: [] as ThreadView[],
+  dmUnread: 0,
+  dmOpen: null as { device: string; name: string; lines: DirectLine[] } | null,
 
   /** Player economy. Populated from server state; see server/src/game. */
   charge: 100,
@@ -334,6 +379,9 @@ export function resetWorld() {
   world.listings = [];
   world.boards = [];
   world.crew = null;
+  world.dmThreads = [];
+  world.dmUnread = 0;
+  world.dmOpen = null;
   world.resting = false;
   world.localTier = "none";
   world.localTraits = "000010";

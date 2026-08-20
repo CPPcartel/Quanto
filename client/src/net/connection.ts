@@ -7,6 +7,8 @@ import {
   type TickerView,
   type ListingView,
   type CrewView,
+  type ThreadView,
+  type DirectLine,
 } from "./world";
 import { accountToken } from "../auth/useAccount";
 import { worldToScreen } from "../pixi/iso";
@@ -15,7 +17,7 @@ import { worldToScreen } from "../pixi/iso";
  * Where the game server lives.
  *
  * Set VITE_SERVER_URL at build time to the deployed server, e.g.
- * `wss://candlestick-server.up.railway.app`. Note the scheme: a page served
+ * `wss://quanto-server.up.railway.app`. Note the scheme: a page served
  * over https cannot open an insecure `ws://` socket — browsers block it as
  * mixed content — so production must be `wss://`. The fallback below picks the
  * matching scheme automatically if the variable is missing.
@@ -34,10 +36,20 @@ export let room: Room | null = null;
  * when the chain layer lands.
  */
 export function deviceId(): string {
-  const KEY = "candlestick.deviceId";
+  const KEY = "quanto.deviceId";
+  /**
+   * The key this used to be, before the project was renamed.
+   *
+   * A device id IS the identity the server trusts, so changing the key would
+   * have silently handed every existing player a brand new account and left
+   * their floors, balance and crew behind an id nobody looks up any more. The
+   * old value is adopted once and then written under the new key.
+   */
+  const LEGACY_KEY = "candlestick.deviceId";
+
   let id = localStorage.getItem(KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = localStorage.getItem(LEGACY_KEY) ?? crypto.randomUUID();
     localStorage.setItem(KEY, id);
   }
   return id;
@@ -299,6 +311,61 @@ export async function connect() {
       chatListeners.forEach((fn) => fn(msg));
     });
 
+    /**
+     * Crew scrollback, replayed on join.
+     *
+     * Delivered as one batch rather than as individual `chat` messages, so it
+     * never triggers speech bubbles — a bubble for something said four hours ago
+     * would pop over somebody's head as they walked in.
+     */
+    joined.onMessage("crewHistory", (lines: { name: string; text: string; at: number }[]) => {
+      crewHistoryListeners.forEach((fn) => fn(lines));
+    });
+
+    joined.onMessage("dmInbox", (msg: { threads: ThreadView[]; unread: number }) => {
+      world.dmThreads = msg.threads ?? [];
+      world.dmUnread = msg.unread ?? 0;
+
+      // Keep an open conversation's unread count from reappearing after a send.
+      if (world.dmOpen) {
+        const open = world.dmThreads.find((t) => t.device === world.dmOpen!.device);
+        if (open) open.unread = 0;
+      }
+      markUiDirty();
+    });
+
+    joined.onMessage("dmThread", (msg: { device: string; lines: DirectLine[] }) => {
+      const name =
+        world.dmThreads.find((t) => t.device === msg.device)?.name ??
+        world.dmOpen?.name ??
+        "Trader";
+      world.dmOpen = { device: msg.device, name, lines: msg.lines ?? [] };
+      markUiDirty();
+    });
+
+    joined.onMessage("dmIncoming", (msg: IncomingDm) => {
+      // Appended straight into the open thread so a live reply lands without a
+      // round trip. Matched on the handle rather than the display name, because
+      // two players may pick the same name and a reply must never surface in
+      // somebody else's conversation.
+      if (world.dmOpen && world.dmOpen.device === msg.handle) {
+        world.dmOpen.lines.push({
+          id: -msg.at,
+          fromName: msg.fromName,
+          mine: false,
+          text: msg.text,
+          at: msg.at,
+        });
+      }
+      dmListeners.forEach((fn) => fn(msg));
+      markUiDirty();
+    });
+
+    joined.onMessage("dmResult", (result: DmOutcome) => {
+      dmResultListeners.forEach((fn) => fn(result));
+      markUiDirty();
+    });
+
     joined.onMessage("buyFloorResult", (result: BuyOutcome) => {
       emitBuyResult(result);
       markUiDirty();
@@ -396,8 +463,26 @@ export async function connect() {
 
     return joined;
   } catch (err) {
-    world.conn = "error";
-    world.error = `could not reach game server on ${SERVER_URL}`;
+    /**
+     * Tell an auth refusal apart from an unreachable server.
+     *
+     * The server rejects an unauthenticated join with 401 before a player
+     * exists. Reporting that as "could not reach game server" would send
+     * somebody hunting a network fault when the real answer is "sign in" — and
+     * it is exactly what a deploy with `REQUIRE_AUTH` on but no
+     * `VITE_PRIVY_APP_ID` looks like, where the client believes accounts are
+     * optional and the server disagrees.
+     */
+    const code = (err as { code?: number })?.code;
+    const message = String((err as Error)?.message ?? err);
+    if (code === 401 || code === 503 || /sign in|not configured/i.test(message)) {
+      world.conn = "error";
+      world.authRequired = true;
+      world.error = message;
+    } else {
+      world.conn = "error";
+      world.error = `could not reach game server on ${SERVER_URL}`;
+    }
     markUiDirty();
     console.error("[net] connect failed", err);
     throw err;
@@ -453,8 +538,10 @@ export interface IncomingChat {
   color: string;
   crewTag: string;
   text: string;
-  channel: "local" | "district";
+  channel: "local" | "district" | "crew";
   at: number;
+  /** Set by the client on replayed crew scrollback — never sent by the server. */
+  history?: boolean;
 }
 
 const chatListeners = new Set<(msg: IncomingChat) => void>();
@@ -470,8 +557,85 @@ export function onChat(fn: (msg: IncomingChat) => void) {
   };
 }
 
-export function sendChat(text: string, channel: "local" | "district") {
+export function sendChat(text: string, channel: "local" | "district" | "crew") {
   room?.send("chat", { text, channel });
+}
+
+// ---------------------------------------------------------------------------
+// Crew history and direct messages
+// ---------------------------------------------------------------------------
+
+/**
+ * A private message arriving live.
+ *
+ * Addressed by `fromSession`, never by device id — a device id is the guest
+ * identity the server trusts on join, so it must never reach a client. That is
+ * why replying takes a session id and reopening a thread takes the opaque
+ * handle the server itself supplied.
+ */
+export interface IncomingDm {
+  fromSession: string;
+  /** The sender's conversation handle, as this client addresses them. */
+  handle: string;
+  fromName: string;
+  text: string;
+  at: number;
+}
+
+export type DmOutcome = { ok: true; at: number } | { ok: false; reason: string };
+
+const crewHistoryListeners = new Set<(lines: { name: string; text: string; at: number }[]) => void>();
+const dmListeners = new Set<(msg: IncomingDm) => void>();
+const dmResultListeners = new Set<(r: DmOutcome) => void>();
+
+export function onCrewHistory(fn: (lines: { name: string; text: string; at: number }[]) => void) {
+  crewHistoryListeners.add(fn);
+  return () => {
+    crewHistoryListeners.delete(fn);
+  };
+}
+
+export function onDirectMessage(fn: (msg: IncomingDm) => void) {
+  dmListeners.add(fn);
+  return () => {
+    dmListeners.delete(fn);
+  };
+}
+
+export function onDmResult(fn: (r: DmOutcome) => void) {
+  dmResultListeners.add(fn);
+  return () => {
+    dmResultListeners.delete(fn);
+  };
+}
+
+/** Start a conversation with somebody in the room, addressed by session. */
+export function sendDm(toSession: string, text: string) {
+  room?.send("dmSend", { to: toSession, text });
+}
+
+/**
+ * Reply inside a conversation you already have.
+ *
+ * Takes the opaque handle from the inbox rather than a session, so a reply still
+ * goes through after the other person has logged off — which is the whole reason
+ * these are stored rather than shouted.
+ */
+export function replyToThread(handle: string, text: string) {
+  room?.send("dmSend", { handle, text });
+}
+
+export function refreshInbox() {
+  room?.send("dmThreads");
+}
+
+/** Open one conversation. `device` is the opaque handle from the inbox. */
+export function openThread(device: string) {
+  room?.send("dmThread", device);
+}
+
+export function setBlocked(device: string, block: boolean) {
+  room?.send("dmBlock", { device, block });
 }
 
 export function sendEmote(name: string) {

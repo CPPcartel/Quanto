@@ -31,3 +31,16 @@ contracts/typechain-types/
 .env
 .env.*
 !.env.example
+
+# Promo render artefacts.
+#
+# `capture/` is 250MB of PNG sequences and `out/` is the rendered videos — both
+# are build output, reproducible from the sources beside them. `public/footage`
+# is the encoded game capture; re-shoot it with scripts/capture-all.sh rather
+# than storing it in git.
+#
+# `public/nft` IS committed: it is 48 tokens the composition needs at render
+# time, and it is under a megabyte.
+promo/capture/
+promo/out/
+promo/public/footage/

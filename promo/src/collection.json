@@ -1,0 +1,342 @@
+{
+  "heroes": [
+    {
+      "id": 1,
+      "tier": "Resident",
+      "file": "nft/1.png",
+      "tower": null,
+      "traits": [
+        {
+          "slot": "Jacket",
+          "value": "Ink"
+        },
+        {
+          "slot": "Collar",
+          "value": "Cyan"
+        },
+        {
+          "slot": "Hair",
+          "value": "Pink"
+        },
+        {
+          "slot": "Visor",
+          "value": "Amber"
+        },
+        {
+          "slot": "Skin",
+          "value": "Deep"
+        },
+        {
+          "slot": "Accessory",
+          "value": "Cap"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "tier": "Landlord",
+      "file": "nft/4.png",
+      "tower": null,
+      "traits": [
+        {
+          "slot": "Jacket",
+          "value": "Midnight"
+        },
+        {
+          "slot": "Collar",
+          "value": "Magenta"
+        },
+        {
+          "slot": "Hair",
+          "value": "Grey"
+        },
+        {
+          "slot": "Visor",
+          "value": "Lime"
+        },
+        {
+          "slot": "Skin",
+          "value": "Sand"
+        },
+        {
+          "slot": "Accessory",
+          "value": "Halo"
+        }
+      ]
+    },
+    {
+      "id": 1709,
+      "tier": "Penthouse",
+      "file": "nft/1709.png",
+      "tower": "ETH",
+      "traits": [
+        {
+          "slot": "Jacket",
+          "value": "Moss"
+        },
+        {
+          "slot": "Collar",
+          "value": "Violet"
+        },
+        {
+          "slot": "Hair",
+          "value": "Blonde"
+        },
+        {
+          "slot": "Visor",
+          "value": "Clear"
+        },
+        {
+          "slot": "Skin",
+          "value": "Umber"
+        },
+        {
+          "slot": "Accessory",
+          "value": "Antenna"
+        }
+      ]
+    }
+  ],
+  "wall": [
+    {
+      "id": 1,
+      "file": "nft/1.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 87,
+      "file": "nft/87.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 176,
+      "file": "nft/176.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 265,
+      "file": "nft/265.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 353,
+      "file": "nft/353.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 445,
+      "file": "nft/445.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 533,
+      "file": "nft/533.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 622,
+      "file": "nft/622.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 709,
+      "file": "nft/709.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 797,
+      "file": "nft/797.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 884,
+      "file": "nft/884.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 970,
+      "file": "nft/970.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1053,
+      "file": "nft/1053.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1145,
+      "file": "nft/1145.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1234,
+      "file": "nft/1234.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1322,
+      "file": "nft/1322.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1410,
+      "file": "nft/1410.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1494,
+      "file": "nft/1494.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1579,
+      "file": "nft/1579.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1667,
+      "file": "nft/1667.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1755,
+      "file": "nft/1755.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1841,
+      "file": "nft/1841.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 1928,
+      "file": "nft/1928.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2013,
+      "file": "nft/2013.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2101,
+      "file": "nft/2101.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2185,
+      "file": "nft/2185.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2272,
+      "file": "nft/2272.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2365,
+      "file": "nft/2365.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2457,
+      "file": "nft/2457.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2550,
+      "file": "nft/2550.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2638,
+      "file": "nft/2638.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2722,
+      "file": "nft/2722.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2812,
+      "file": "nft/2812.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2901,
+      "file": "nft/2901.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 2990,
+      "file": "nft/2990.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 3077,
+      "file": "nft/3077.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 3164,
+      "file": "nft/3164.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 3249,
+      "file": "nft/3249.png",
+      "tier": "Resident"
+    },
+    {
+      "id": 4,
+      "file": "nft/4.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 374,
+      "file": "nft/374.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 785,
+      "file": "nft/785.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 1157,
+      "file": "nft/1157.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 1623,
+      "file": "nft/1623.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 2058,
+      "file": "nft/2058.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 2486,
+      "file": "nft/2486.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 2883,
+      "file": "nft/2883.png",
+      "tier": "Landlord"
+    },
+    {
+      "id": 66,
+      "file": "nft/66.png",
+      "tier": "Penthouse"
+    },
+    {
+      "id": 2424,
+      "file": "nft/2424.png",
+      "tier": "Penthouse"
+    }
+  ]
+}

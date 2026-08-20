@@ -1,8 +1,8 @@
 {
-  "name": "candlestick-collection",
+  "name": "quanto-collection",
   "private": true,
   "type": "module",
-  "description": "Generator for the Candlestick Residents pixel NFT collection.",
+  "description": "Generator for the Quanto Residents pixel NFT collection.",
   "scripts": {
     "preview": "node src/generate.mjs --preview",
     "build": "node src/generate.mjs",

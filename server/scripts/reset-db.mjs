@@ -23,7 +23,18 @@ if (process.env.DATABASE_URL) {
 }
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const dir = resolve(root, "data", "pg");
+
+/**
+ * The same path the server opens.
+ *
+ * This used to be hardcoded to `data/pg` while the server honoured `DATA_DIR`,
+ * so running the script against a throwaway database deleted the *development*
+ * one and then failed trying to import into the corrupt copy it was asked to
+ * fix — the one script that exists to recover from a force-kill made things
+ * worse. Both sides must read the same variable.
+ */
+const dataDir = process.env.DATA_DIR ?? "./data";
+const dir = resolve(root, dataDir, "pg");
 
 console.log(`Removing ${dir}`);
 await rm(dir, { recursive: true, force: true });

@@ -1,5 +1,5 @@
 /**
- * The Candlestick Residents trait schema, server side.
+ * The Quanto Residents trait schema, server side.
  *
  * The server's only job here is turning NFT metadata attributes into indices,
  * so it carries the value **names** and nothing about colour — the renderer owns

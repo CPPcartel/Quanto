@@ -1,5 +1,5 @@
 /**
- * The Candlestick Residents trait schema.
+ * The Quanto Residents trait schema.
  *
  * This is the contract between three things that must agree exactly: the NFT
  * metadata minted on OpenSea, the server's tier resolution, and the sprite

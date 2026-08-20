@@ -2,7 +2,7 @@ const hre = require("hardhat");
 const { parseEther, stringToHex } = require("viem");
 
 /**
- * Deploy the Candlestick City contracts and register the real Chainlink feeds.
+ * Deploy the Quanto contracts and register the real Chainlink feeds.
  *
  *   npx hardhat run scripts/deploy.cjs --network robinhoodTestnet
  *   OWNER_ADDRESS=0x... npx hardhat run scripts/deploy.cjs --network robinhoodMainnet

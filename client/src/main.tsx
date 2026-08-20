@@ -3,6 +3,11 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./site/site.css";
 import "./styles.css";
+import { installCaptureHandle } from "./dev/captureHandle";
+
+// Dev-only handle used to shoot promo footage from the real client. Compiled
+// out of production builds entirely — see the module for why that matters.
+installCaptureHandle();
 
 // Privy is deliberately NOT mounted here — it is loaded with the game only,
 // so the marketing pages don't carry a megabyte of auth they never use.

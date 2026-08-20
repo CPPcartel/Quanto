@@ -45,7 +45,7 @@ contract FloorDeed is ERC721, Ownable {
         _;
     }
 
-    constructor() ERC721("Candlestick Floor", "FLOOR") Ownable(msg.sender) {}
+    constructor() ERC721("Quanto Floor", "FLOOR") Ownable(msg.sender) {}
 
     function setController(address controller, bool allowed) external onlyOwner {
         if (controller == address(0)) revert ZeroAddress();

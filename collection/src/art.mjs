@@ -2,7 +2,7 @@ import { Grid, shade, tintUp, mix } from "./png.mjs";
 import { drawText, textWidth, GLYPH_H } from "./font.mjs";
 
 /**
- * The Candlestick Resident portrait.
+ * The Quanto Resident portrait.
  *
  * A 32x32 bust, not the 20x34 walk sprite the game renders. Those are the same
  * character described by the same traits, but they answer different questions:

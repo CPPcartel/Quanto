@@ -70,6 +70,16 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
     antialias: false,
     backgroundColor: 0x07080f,
     preference: "webgl",
+    /**
+     * Keep the drawing buffer after compositing — dev builds only.
+     *
+     * WebGL discards the buffer once a frame is presented unless asked not to,
+     * which is right for a game and fatal for capturing one: an external
+     * screenshot of the canvas comes back transparent even though the renderer
+     * is demonstrably drawing. The promo footage is shot from this client, so
+     * dev keeps the buffer and production does not pay for it.
+     */
+    preserveDrawingBuffer: import.meta.env.DEV,
   });
   // Defensive: a remount should never leave two canvases stacked in the host.
   host.replaceChildren();
@@ -169,6 +179,22 @@ export async function startGame(host: HTMLDivElement): Promise<GameHandle> {
   let panY = 0;
   let dragging = false;
   let dragPointer = -1;
+
+  /**
+   * A pan setter for the footage capture, dev builds only.
+   *
+   * `panX`/`panY` are deliberately local — nothing in the game should be able to
+   * teleport the camera. But shooting a promo needs the shot framed exactly and
+   * repeatably, and simulating a pointer drag to land on a specific building is
+   * guesswork. Vite compiles this block out of production entirely.
+   */
+  if (import.meta.env.DEV) {
+    (window as unknown as Record<string, unknown>).__ccPan = (x: number, y: number) => {
+      panX = x;
+      panY = y;
+      world.panned = panX !== 0 || panY !== 0;
+    };
+  }
   let lastDragX = 0;
   let lastDragY = 0;
   /** Total pointer travel this press, used to tell a click from a drag. */

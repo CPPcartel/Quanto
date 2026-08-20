@@ -37,7 +37,7 @@ contract BlockToken is ERC20, Ownable {
         _;
     }
 
-    constructor(uint256 dailyCap_) ERC20("Candlestick Block", "BLOCK") Ownable(msg.sender) {
+    constructor(uint256 dailyCap_) ERC20("Quanto Block", "BLOCK") Ownable(msg.sender) {
         dailyCap = dailyCap_;
         emit DailyCapSet(dailyCap_);
     }

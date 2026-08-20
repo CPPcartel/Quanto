@@ -9,7 +9,7 @@
  */
 
 export const META = {
-  title: "Candlestick City",
+  title: "Quanto",
   subtitle: "A multiplayer world built from live equity price feeds on Robinhood Chain",
   version: "Version 1.0",
   date: "August 2026",
@@ -19,7 +19,7 @@ export const SECTIONS = [
   { type: "h2", text: "Abstract" },
   {
     type: "p",
-    text: "Candlestick City is a persistent, browser-based multiplayer world in which every building corresponds to a real publicly-traded company, and that building's height is derived from the company's live share price. Prices are sourced from Chainlink oracles deployed on Robinhood Chain, an Ethereum Layer-2 network carrying tokenized US equities. Players lease floors within these towers, work shifts, collect during volatility events, and place signage. Ownership is expressed physically rather than through an interface: a leased floor renders as a lit window, so the aggregate glow of the skyline is a direct, continuously updated visualisation of the player economy.",
+    text: "Quanto is a persistent, browser-based multiplayer world in which every building corresponds to a real publicly-traded company, and that building's height is derived from the company's live share price. Prices are sourced from Chainlink oracles deployed on Robinhood Chain, an Ethereum Layer-2 network carrying tokenized US equities. Players lease floors within these towers, work shifts, collect during volatility events, and place signage. Ownership is expressed physically rather than through an interface: a leased floor renders as a lit window, so the aggregate glow of the skyline is a direct, continuously updated visualisation of the player economy.",
   },
   {
     type: "p",
@@ -37,7 +37,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Games, by contrast, are spaces people inhabit. Spatial memory, peripheral awareness, and social presence are all things a world provides and a chart cannot. The premise of Candlestick City is that a market becomes legible in a categorically different way when it is a place: when volatility is weather you walk through, when a company's decline is a tower visibly shrinking beside you over the course of an afternoon, and when the trading day has a dawn, a peak and a dusk that you experience rather than observe.",
+    text: "Games, by contrast, are spaces people inhabit. Spatial memory, peripheral awareness, and social presence are all things a world provides and a chart cannot. The premise of Quanto is that a market becomes legible in a categorically different way when it is a place: when volatility is weather you walk through, when a company's decline is a tower visibly shrinking beside you over the course of an afternoon, and when the trading day has a dawn, a peak and a dusk that you experience rather than observe.",
   },
   {
     type: "p",
@@ -83,7 +83,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Candlestick City instead treats it as the world's day-night cycle. When the feeds freeze, the skyline freezes with them, ambient fog closes in, lighting drops, and floor yield ceases. Crypto-bonded towers, whose feeds are genuinely continuous, remain live throughout. The result is a strategic asymmetry — continuous but volatile income in one district, higher but intermittent income elsewhere — that originates in market structure rather than in a tuning parameter.",
+    text: "Quanto instead treats it as the world's day-night cycle. When the feeds freeze, the skyline freezes with them, ambient fog closes in, lighting drops, and floor yield ceases. Crypto-bonded towers, whose feeds are genuinely continuous, remain live throughout. The result is a strategic asymmetry — continuous but volatile income in one district, higher but intermittent income elsewhere — that originates in market structure rather than in a tuning parameter.",
   },
   {
     type: "p",
@@ -293,7 +293,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "What these tools are not is inhabited. They are visualisations you orbit, not places you occupy, and they are static snapshots of historical data rather than live systems. Candlestick City takes the encoding and adds presence, persistence and a live data source.",
+    text: "What these tools are not is inhabited. They are visualisations you orbit, not places you occupy, and they are static snapshots of historical data rather than live systems. Quanto takes the encoding and adds presence, persistence and a live data source.",
   },
   { type: "h3", text: "9.2 Social worlds" },
   {

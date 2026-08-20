@@ -98,7 +98,7 @@ export function ClubDoor() {
       <div className="panel compact">
         <p className="club-door-title">The Vault · holders only</p>
         <p className="dim tiny">
-          Hold the coin or a Candlestick Residents NFT, connect that wallet, and the rope
+          Hold the coin or a Quanto Residents NFT, connect that wallet, and the rope
           comes down. Everything else in the city stays open to you either way.
         </p>
       </div>

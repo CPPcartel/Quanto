@@ -36,7 +36,7 @@ function main() {
   const account = privateKeyToAccount(privateKey);
 
   const block = [
-    "# Deployment key for Candlestick City contracts.",
+    "# Deployment key for Quanto contracts.",
     "# NEVER commit this file or paste DEPLOYER_KEY anywhere.",
     "# Fund only what a deploy costs; this is a hot key.",
     `DEPLOYER_KEY=${privateKey}`,

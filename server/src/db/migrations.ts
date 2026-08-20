@@ -285,7 +285,7 @@ const MIGRATIONS: Migration[] = [
     id: "008_nft",
     sql: `
       /*
-        Snapshot of the Candlestick Residents collection.
+        Snapshot of the Quanto Residents collection.
 
         The contract is deployed by OpenSea Studio, so we do not own it and
         cannot extend it. Ownership is read live from chain; what a token *is*
@@ -339,6 +339,64 @@ const MIGRATIONS: Migration[] = [
 
       CREATE INDEX IF NOT EXISTS idx_players_penthouse
         ON players(penthouse) WHERE penthouse IS NOT NULL;
+    `,
+  },
+
+  {
+    id: "009_messaging",
+    sql: `
+      /*
+        Which crew a message belonged to.
+
+        Every crew message was already being logged, but without this column the
+        table could not answer "what did MY crew say?" — the data was on disk and
+        unqueryable. Crew history is the one channel people expect scrollback
+        from, because it is about who you are with rather than where you stand.
+      */
+      ALTER TABLE chat_log ADD COLUMN IF NOT EXISTS crew_tag text;
+      CREATE INDEX IF NOT EXISTS idx_chat_crew
+        ON chat_log(crew_tag, at DESC) WHERE crew_tag IS NOT NULL;
+
+      /*
+        Direct messages.
+
+        These need storage in a way proximity chat does not: a DM to somebody who
+        is offline has to still be there when they return, or it is not a DM.
+
+        Addressed by device id, which the SERVER resolves. Device ids are never
+        sent to clients — a device id is the guest identity, so leaking one would
+        let anyone join as that player.
+      */
+      CREATE TABLE IF NOT EXISTS direct_messages (
+        id          bigserial PRIMARY KEY,
+        from_device text NOT NULL,
+        to_device   text NOT NULL,
+        from_name   text NOT NULL,
+        text        text NOT NULL,
+        at          timestamptz NOT NULL DEFAULT now(),
+        read_at     timestamptz
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dm_inbox ON direct_messages(to_device, at DESC);
+      CREATE INDEX IF NOT EXISTS idx_dm_thread
+        ON direct_messages(to_device, from_device, at DESC);
+      CREATE INDEX IF NOT EXISTS idx_dm_unread
+        ON direct_messages(to_device) WHERE read_at IS NULL;
+
+      /*
+        Blocks.
+
+        Built now rather than added after the first incident. Proximity chat is
+        self-limiting because the sender has to be present; a DM reaches anyone,
+        which is how harassment arrives. Enforced server-side on send, so a
+        blocked message is never written and never delivered.
+      */
+      CREATE TABLE IF NOT EXISTS blocks (
+        device_id      text NOT NULL,
+        blocked_device text NOT NULL,
+        at             timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (device_id, blocked_device)
+      );
     `,
   },
 ];

@@ -21,10 +21,9 @@ import {
  * client only asks and reports what came back.
  */
 
-export function MarketPanel() {
+export function MarketPanelBody({ onClose }: { onClose: () => void }) {
   useSyncExternalStore(subscribeUi, getUiVersion);
 
-  const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"browse" | "sell">("browse");
   const [symbol, setSymbol] = useState("");
   const [price, setPrice] = useState("");
@@ -58,17 +57,6 @@ export function MarketPanel() {
     [getUiVersion()]
   );
 
-  if (!open) {
-    return (
-      <div className="hud market-launcher">
-        <button className="crew-chip" onClick={() => setOpen(true)}>
-          <span className="mono">MARKET</span>
-          <span className="dim tiny">{listings.length} listed</span>
-        </button>
-      </div>
-    );
-  }
-
   const askFor = (l: (typeof listings)[number]) => {
     const tower = world.tickers.get(l.symbol);
     if (!tower || !tower.floorPrice) return null;
@@ -77,11 +65,10 @@ export function MarketPanel() {
   };
 
   return (
-    <div className="hud market-launcher">
-      <div className="panel compact market-panel">
+    <>
         <div className="crew-head">
           <span className="wallet-label">FLOOR MARKET</span>
-          <button className="link tiny" onClick={() => setOpen(false)}>
+          <button className="link tiny" onClick={onClose}>
             close
           </button>
         </div>
@@ -216,7 +203,6 @@ export function MarketPanel() {
             {flash.ok ? flash.message : flash.reason}
           </p>
         )}
-      </div>
-    </div>
+    </>
   );
 }

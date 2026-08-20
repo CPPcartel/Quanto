@@ -35,7 +35,7 @@ const doc = new PDFDocument({
     Title: `${META.title} — Whitepaper`,
     Author: META.title,
     Subject: META.subtitle,
-    Keywords: "candlestick city, robinhood chain, chainlink, onchain game, tokenized equities",
+    Keywords: "quanto, robinhood chain, chainlink, onchain game, tokenized equities",
   },
 });
 

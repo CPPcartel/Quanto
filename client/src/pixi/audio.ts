@@ -32,7 +32,9 @@ const BPM_PEAK = 150;
 /** Master ceiling. Even "full" should not be the loudest thing on the machine. */
 const MAX_GAIN = 0.22;
 
-const STORAGE_KEY = "candlestick.audio";
+const STORAGE_KEY = "quanto.audio";
+/** Pre-rename key. Only a mute preference, but free to carry over. */
+const LEGACY_STORAGE_KEY = "candlestick.audio";
 
 type Ready = "idle" | "blocked" | "running";
 
@@ -53,7 +55,8 @@ class ClubAudio {
     // Muted by default. Audio that starts on its own is the fastest way to make
     // someone close a tab.
     try {
-      this.enabled = localStorage.getItem(STORAGE_KEY) === "on";
+      this.enabled =
+        (localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)) === "on";
     } catch {
       this.enabled = false;
     }

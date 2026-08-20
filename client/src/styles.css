@@ -69,8 +69,9 @@ canvas {
   right: 1rem;
 }
 .debug-readout {
-  top: 23rem;
+  top: 3rem;
   right: 1rem;
+  margin-top: 31.5rem;
 }
 
 /* ---------- wallet ---------- */
@@ -308,6 +309,11 @@ button.sign-toggle:disabled {
 }
 
 /* ---------- minimap ---------- */
+/* ---------- right rail ----------
+   Fixed slots, top to bottom. Every one of these used to choose its own offset
+   independently, and two of them chose the SAME one: .minimap and .top-right
+   both sat at top:3rem, so the zoom indicator rendered underneath the map and
+   was never visible. Slots are assigned here, once. */
 .minimap {
   top: 3rem;
   right: 1rem;
@@ -459,8 +465,9 @@ button.board-toggle {
   apart whatever the inspector is showing.
 */
 .help-button {
-  top: 31.5rem;
+  top: 3rem;
   right: 1rem;
+  margin-top: 40rem;
 }
 button.help {
   width: 34px;
@@ -874,6 +881,24 @@ code {
   color: var(--violet);
   margin-right: 0.3rem;
 }
+/* Replayed crew scrollback. Dimmed so it reads as "before you got here"
+   without being a second, separate log the eye has to reconcile. */
+.chat-line.replayed { opacity: 0.62; }
+
+/* A name is clickable when we know who said it — it opens a conversation. */
+button.chat-who {
+  margin-right: 0.35rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+button.chat-who:hover { text-decoration: underline; }
+button.chat-who:focus-visible { outline: 1px solid var(--amber); outline-offset: 1px; }
+
 .chat-form { display: flex; gap: 0.35rem; align-items: center; }
 .chat-form input { flex: 1; min-width: 0; }
 button.chat-scope {
@@ -899,24 +924,87 @@ button.emote-btn {
 }
 button.emote-btn:hover { border-color: var(--violet); }
 
-/* ---------- crew + market dock ----------
-   Both sit under the wallet readout in the centre column: crew right-aligned
-   just left of centre, market left-aligned just right of it, so their expanded
-   panels grow outward instead of over each other. The centre column is empty
-   between the wallet and the leaderboard, which is why they live here rather
-   than in the already-stacked left and right rails. */
-.crew-launcher,
-.market-launcher {
+/* ---------- centre dock ----------
+   One row of tabs under the wallet, and ONE panel below it.
+
+   This replaced three separately-positioned launchers that all sat at
+   left:50% with different margin-tops. Opening two of them stacked the panels
+   on each other and on the wallet readout — which is not a spacing problem, it
+   is three components each believing they own the same column. The Dock owns
+   the column now, and only one panel can be open. */
+.dock {
   top: 3rem;
   left: 50%;
-  margin-top: 5.2rem;
+  transform: translateX(-50%);
+  margin-top: 5.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  /* Never taller than the space between the wallet and the leaderboard. */
+  max-height: calc(100vh - 16rem);
 }
-.crew-launcher {
-  transform: translateX(-100%);
-  margin-left: -0.3rem;
+
+.dock-tabs {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1px;
+  max-width: calc(100vw - 2rem);
+  background: var(--panel-border);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  overflow: hidden;
 }
-.market-launcher {
-  margin-left: 0.3rem;
+.dock-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.7rem;
+  background: var(--panel);
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dock-tab:hover { color: var(--ink); }
+.dock-tab.on { color: var(--amber); background: rgba(255, 179, 71, 0.1); }
+.dock-tab:focus-visible { outline: 1px solid var(--amber); outline-offset: -1px; }
+
+.dock-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 5px currentColor;
+}
+.dock-dot.dim-dot { background: var(--panel-border); box-shadow: none; }
+.dock-count {
+  font-size: 0.58rem;
+  padding: 0 0.28rem;
+  border-radius: 6px;
+  background: var(--panel-border);
+  color: var(--ink);
+}
+/* Unread messages are the one count worth interrupting for. */
+.dock-count.alert {
+  background: var(--amber);
+  color: #10121a;
+  font-weight: 700;
+}
+
+.dock-panel {
+  width: 20rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  /* The panel scrolls rather than growing off the bottom of the screen. */
+  overflow-y: auto;
+  max-height: calc(100vh - 20rem);
 }
 
 .crew-chip {
@@ -950,15 +1038,12 @@ button.emote-btn:hover { border-color: var(--violet); }
   box-shadow: none;
 }
 
+/* Widths come from .dock-panel now — these two only carry their own spacing. */
 .crew-panel,
 .market-panel {
-  width: 17.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-}
-.market-panel {
-  width: 20rem;
 }
 .crew-head {
   display: flex;
@@ -1104,14 +1189,7 @@ button.emote-btn:hover { border-color: var(--violet); }
 
 /* ---------- NFT collection panel ----------
    Sits under the crew/market dock in the centre column. */
-.collection-launcher {
-  top: 3rem;
-  left: 50%;
-  margin-top: 8rem;
-  transform: translateX(-50%);
-}
 .collection-panel {
-  width: 19rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1159,7 +1237,7 @@ button.emote-btn:hover { border-color: var(--violet); }
 .club-banner {
   top: 3rem;
   right: 1rem;
-  margin-top: 11rem;
+  margin-top: 22.5rem;
 }
 .club-panel {
   width: 15rem;
@@ -1207,5 +1285,129 @@ button.emote-btn:hover { border-color: var(--violet); }
 .club-audio {
   top: 3rem;
   right: 1rem;
-  margin-top: 9.4rem;
+  margin-top: 19.5rem;
+}
+
+/* Crew messages carry across the whole map, so they get their own colour. */
+.chat-ch.crew { color: var(--amber); }
+.chat-scope.crew {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+
+/* ---------------------------------------------------------------------------
+   Messages
+   ------------------------------------------------------------------------- */
+
+.dm-threads {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.dm-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.4rem 0.5rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--ink-muted);
+  text-align: left;
+  cursor: pointer;
+}
+.dm-thread:hover { background: rgba(255, 255, 255, 0.03); color: var(--ink); }
+.dm-thread:focus-visible { outline: 1px solid var(--amber); outline-offset: -1px; }
+.dm-thread.unread { color: var(--ink); }
+.dm-thread-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.dm-thread-name { font-size: 0.78rem; }
+.dm-thread.unread .dm-thread-name { font-weight: 700; }
+/* One line of preview. A long message must not stretch the panel. */
+.dm-thread-last {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dm-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 6rem;
+  max-height: 13rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.dm-line {
+  margin: 0;
+  align-self: flex-start;
+  max-width: 85%;
+  padding: 0.3rem 0.45rem;
+  border-radius: 6px 6px 6px 2px;
+  background: var(--panel-border);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+/* Your own messages sit on the other side, which is how every messaging app
+   signals authorship without repeating a name on every line. */
+.dm-line.mine {
+  align-self: flex-end;
+  border-radius: 6px 6px 2px 6px;
+  background: rgba(255, 179, 71, 0.16);
+}
+.dm-at {
+  display: block;
+  margin-top: 0.1rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dm-form input { min-width: 0; }
+.dm-block { align-self: flex-start; }
+.row.space.dm-block { align-self: stretch; }
+
+/* ---------------------------------------------------------------------------
+   Sign-in wall
+   ------------------------------------------------------------------------- */
+
+/* Sits over the city rather than replacing it — the skyline behind is a better
+   argument for signing in than an empty page would be. */
+.signin-wall {
+  background: radial-gradient(ellipse at center, rgba(17, 19, 26, 0.72), rgba(17, 19, 26, 0.94));
+  backdrop-filter: blur(3px);
+  z-index: 40;
+}
+.signin-panel {
+  width: min(30rem, calc(100vw - 3rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  text-align: center;
+  align-items: center;
+  padding: 2rem 1.9rem 1.7rem;
+}
+.signin-title {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.signin-copy {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  max-width: 26rem;
+}
+.signin-panel .primary-btn { width: 100%; margin-top: 0.3rem; }
+.signin-note { margin: 0; max-width: 24rem; }
+.signin-copy code {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: var(--amber);
 }
