@@ -105,6 +105,30 @@ export class NftService {
    * a guest is a bad minute; a player unable to join because a metadata gateway
    * is slow is a bad launch.
    */
+  /**
+   * The best thing this account holds, across every wallet it has proved.
+   *
+   * Holdings are a property of addresses, not of people, and people keep tokens
+   * in one wallet and spend from another. Checking a single address refuses a
+   * genuine holder, which is the one failure this whole design exists to avoid —
+   * so every linked wallet is read and the best tier wins, exactly as the best
+   * token wins within one wallet.
+   *
+   * Reads run in parallel: these are independent RPC calls, and a player with
+   * four wallets should not wait four round trips to be let through a door.
+   */
+  async holdingsFor(wallets: string[]): Promise<Holding> {
+    if (!this.enabled || wallets.length === 0) return NO_HOLDING;
+
+    const found = await Promise.all(wallets.map((w) => this.holdingFor(w)));
+
+    let best = NO_HOLDING;
+    for (const holding of found) {
+      if (TIER_RANK[holding.tier] > TIER_RANK[best.tier]) best = holding;
+    }
+    return best;
+  }
+
   async holdingFor(wallet: string): Promise<Holding> {
     if (!this.enabled || !wallet) return NO_HOLDING;
 

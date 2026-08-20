@@ -505,11 +505,18 @@ export class CityRoom extends Room<CityState> {
     });
 
     /**
-     * Verify a wallet signature and adopt that wallet's save.
+     * Verify a wallet signature and attach that wallet to this account.
      *
-     * Signing proves ownership only — it authorises no transaction and costs
-     * no gas. On success, guest progress is carried over (or the wallet's
-     * existing save is restored if it has played from another browser before).
+     * Signing proves ownership only — it authorises no transaction and costs no
+     * gas.
+     *
+     * It attaches, and nothing else. An earlier version adopted whichever save
+     * the wallet had played on before, which made sense while the wallet was the
+     * identity. Once accounts exist that becomes a second identity system
+     * fighting the first: sign in as yourself, connect a wallet that once played
+     * in another browser, and someone else's balance and floors would land on
+     * your account. The account decides who you are; the wallet only says what
+     * you hold.
      */
     this.onMessage(
       "walletVerify",
@@ -529,33 +536,32 @@ export class CityRoom extends Room<CityState> {
           return;
         }
 
-        const guestDevice = this.devices.get(client.sessionId) ?? address;
-        const canonicalDevice = await this.store.linkWallet(address, guestDevice);
-
-        // The wallet already had a save elsewhere — load it over the guest one.
-        if (canonicalDevice !== guestDevice) {
-          const saved = await this.store.loadPlayer(canonicalDevice);
-          if (saved) {
-            player.block = saved.block;
-            player.charge = Math.min(CHARGE_MAX, saved.charge);
-            player.shards = saved.shards;
-            player.floors.clear();
-            for (const [symbol, count] of Object.entries(saved.floors)) {
-              if (count > 0) player.floors.set(symbol, count);
-            }
-          }
-          this.devices.set(client.sessionId, canonicalDevice);
+        const deviceId = this.devices.get(client.sessionId);
+        if (!deviceId) {
+          client.send("walletVerifyResult", { ok: false, reason: "Not signed in." });
+          return;
         }
 
-        player.wallet = address;
-        this.persist(client.sessionId);
+        /**
+         * The save must exist before a wallet can point at it, and a brand-new
+         * account may still be queued in the write-behind flusher.
+         */
+        await this.ledger.flush().catch(() => {});
+
+        const linked = await this.store.linkWallet(address, deviceId);
+        if (!linked.ok) {
+          client.send("walletVerifyResult", { ok: false, reason: linked.reason });
+          return;
+        }
+
+        if (!player.wallet) player.wallet = address;
         client.send("walletVerifyResult", { ok: true, address });
 
         // The wallet is only now proved, so this is the earliest point a tier
         // can honestly be granted. Deliberately after the signature check, and
         // never from anything the client sent.
         this.nft.forget(address);
-        this.applyTier(client.sessionId, address);
+        await this.refreshTier(client.sessionId);
       }
     );
 
@@ -837,22 +843,33 @@ export class CityRoom extends Room<CityState> {
    * Nothing here trusts the client. The wallet has already been proved by
    * signature, and the tier comes from a chain read against that address.
    */
-  private applyTier(sessionId: string, wallet: string) {
+  private async refreshTier(sessionId: string) {
     const deviceId = this.devices.get(sessionId);
-    this.nft
-      .holdingFor(wallet)
-      .then(async (holding) => {
-        const player = this.state.players.get(sessionId);
-        if (player) {
-          player.tier = holding.tier;
-          player.traits = holding.traits;
-          player.penthouse = holding.tower ?? "";
-        }
-        // Persist even if they left mid-flight: the penthouse timestamp is what
-        // territory reads, and it should reflect the check we actually did.
-        if (deviceId) await this.nft.persist(deviceId, holding);
-      })
-      .catch((err) => console.warn("[nft] tier resolution failed:", err?.message ?? err));
+    if (!deviceId) return;
+
+    try {
+      /**
+       * Every wallet this account has proved, not the one on the player row.
+       *
+       * Holdings belong to addresses, and people keep tokens in one wallet and
+       * spend from another. Reading a single address refuses a genuine holder,
+       * which is the failure that turns into a refund request.
+       */
+      const wallets = await this.store.walletsFor(deviceId);
+      const holding = await this.nft.holdingsFor(wallets);
+
+      const player = this.state.players.get(sessionId);
+      if (player) {
+        player.tier = holding.tier;
+        player.traits = holding.traits;
+        player.penthouse = holding.tower ?? "";
+      }
+      // Persist even if they left mid-flight: the penthouse timestamp is what
+      // territory reads, and it should reflect the check we actually did.
+      await this.nft.persist(deviceId, holding);
+    } catch (err) {
+      console.warn("[nft] tier resolution failed:", (err as Error)?.message ?? err);
+    }
   }
 
   /**
@@ -1233,7 +1250,16 @@ export class CityRoom extends Room<CityState> {
       const identity = verified;
       if (identity) {
         deviceId = await linkPrivyAccount(this.db, identity, guestId || `privy:${identity.did}`);
-        player.wallet = identity.embeddedWallet ?? identity.wallets[0] ?? "";
+        /**
+         * Deliberately does NOT take a wallet from Privy.
+         *
+         * This used to read `embeddedWallet ?? wallets[0]`, which preferred the
+         * empty wallet Privy generates on login over the one actually holding
+         * the tokens — and rewrote it on every login, so a holder who connected
+         * their real wallet kept their tier for one session and silently lost it
+         * on the next. Privy answers who this is; holdings come from wallets
+         * proved by signature to this server.
+         */
         if (identity.email) player.name = identity.email.split("@")[0].slice(0, 16);
       }
     }
@@ -1250,11 +1276,8 @@ export class CityRoom extends Room<CityState> {
     if (!this.state.players.has(client.sessionId)) return;
 
     if (saved) {
+      // Display only. Holdings are read from every linked wallet below.
       player.wallet = saved.wallet ?? "";
-      // A wallet restored from a save was proved by signature when it was first
-      // linked, so re-resolving its tier here is honest. It also re-stamps the
-      // penthouse timestamp, which is how an absent holder eventually loses it.
-      if (player.wallet) this.applyTier(client.sessionId, player.wallet);
       player.name = saved.name || player.name;
       player.color = saved.color || player.color;
       player.block = saved.block;
@@ -1294,6 +1317,19 @@ export class CityRoom extends Room<CityState> {
     }
 
     this.persist(client.sessionId);
+
+    /**
+     * Resolve holdings from every wallet this account has proved.
+     *
+     * Not awaited: joining must never wait on an RPC round trip or a metadata
+     * gateway. Until it resolves the player is an ordinary resident, which is
+     * exactly what they were a moment earlier.
+     *
+     * Runs for returning and brand-new accounts alike — a wallet linked on one
+     * device must grant its tier on the next, which is precisely the case that
+     * used to break.
+     */
+    void this.refreshTier(client.sessionId);
   }
 
   /**

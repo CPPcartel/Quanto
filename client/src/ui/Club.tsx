@@ -55,7 +55,7 @@ export function ClubBanner() {
         </p>
         {!holder && (
           <p className="dim tiny club-locked">
-            Holders only — a coin or a Residents NFT gets you past the rope.
+            Holders only — a Quanto Residents NFT gets you past the rope.
           </p>
         )}
       </div>
@@ -98,8 +98,8 @@ export function ClubDoor() {
       <div className="panel compact">
         <p className="club-door-title">The Vault · holders only</p>
         <p className="dim tiny">
-          Hold the coin or a Quanto Residents NFT, connect that wallet, and the rope
-          comes down. Everything else in the city stays open to you either way.
+          Hold a Quanto Residents NFT, connect that wallet, and the rope comes down.
+          Everything else in the city stays open to you either way.
         </p>
       </div>
     </div>

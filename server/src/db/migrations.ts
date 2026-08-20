@@ -399,6 +399,59 @@ const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    id: "010_wallets",
+    sql: `
+      /*
+        Linked wallets, one row per address.
+
+        Holdings and identity are different questions with different lifetimes,
+        and they were sharing a single players.wallet column. Identity is the
+        Privy account: durable, survives devices, decides which save loads.
+        Holdings are "which addresses actually hold the tokens" — a set that
+        changes as people connect and disconnect wallets, and that says nothing
+        about who somebody is.
+
+        Conflating them produced a silent bug. An embedded wallet Privy created
+        on login was preferred over a signature-verified address and rewritten on
+        every login, so a paying holder kept their tier for one session and lost
+        it on the next.
+
+        address is the PRIMARY KEY, not (player_id, address). That is the whole
+        uniqueness rule: one wallet belongs to one account. Without it two
+        accounts could each prove the same wallet and both claim the penthouse it
+        holds. Privy enforced this for wallets it linked; nothing enforces it for
+        wallets we verify ourselves, so the database has to.
+      */
+      CREATE TABLE IF NOT EXISTS player_wallets (
+        address   text   PRIMARY KEY,
+        player_id bigint NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+        linked_at timestamptz NOT NULL DEFAULT now()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_player_wallets_player ON player_wallets(player_id);
+
+      /*
+        Carry across whatever players.wallet already held.
+
+        DISTINCT ON keeps the lowest player id when the same address sits on two
+        rows — exactly the duplicate the new primary key forbids, and exactly the
+        kind of row that could have been written before it existed.
+
+        Embedded wallets are deliberately not filtered out. An address already on
+        the row is one this player is associated with, and reading an empty
+        wallet's holdings simply returns nothing. Guessing which historical
+        addresses were embedded would be less accurate than asking the chain.
+      */
+      INSERT INTO player_wallets (address, player_id)
+      SELECT DISTINCT ON (wallet) wallet, id
+        FROM players
+       WHERE wallet IS NOT NULL AND wallet <> ''
+       ORDER BY wallet, id
+      ON CONFLICT (address) DO NOTHING;
+    `,
+  },
+
 ];
 
 /**

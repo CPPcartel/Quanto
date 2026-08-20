@@ -154,24 +154,29 @@ export async function linkPrivyAccount(
 
   const canonical = existing[0]?.device_id ?? guestDeviceId;
 
+  /**
+   * `wallet` is deliberately absent from this statement.
+   *
+   * It used to be set to `embeddedWallet ?? wallets[0]`, which ran on every
+   * login and overwrote whatever was there. A holder who proved their real
+   * wallet by signature kept their tier for one session; the next login replaced
+   * that address with the empty wallet Privy had generated for them, and the
+   * tier silently vanished. The bug was invisible in a single session and only
+   * appeared on the second, which is the worst shape a bug can have.
+   *
+   * embedded_wallet is still recorded — it is genuinely useful to know Privy made
+   * one — but it is a fact about the account, not a claim about holdings.
+   */
   await db.query(
-    `INSERT INTO players (device_id, privy_did, email, embedded_wallet, login_method, is_guest, wallet)
-     VALUES ($1,$2,$3,$4,$5,false,$6)
+    `INSERT INTO players (device_id, privy_did, email, embedded_wallet, login_method, is_guest)
+     VALUES ($1,$2,$3,$4,$5,false)
      ON CONFLICT (device_id) DO UPDATE SET
        privy_did       = EXCLUDED.privy_did,
        email           = COALESCE(EXCLUDED.email, players.email),
        embedded_wallet = COALESCE(EXCLUDED.embedded_wallet, players.embedded_wallet),
        login_method    = COALESCE(EXCLUDED.login_method, players.login_method),
-       is_guest        = false,
-       wallet          = COALESCE(EXCLUDED.wallet, players.wallet)`,
-    [
-      canonical,
-      identity.did,
-      identity.email,
-      identity.embeddedWallet,
-      identity.loginMethod,
-      identity.embeddedWallet ?? identity.wallets[0] ?? null,
-    ]
+       is_guest        = false`,
+    [canonical, identity.did, identity.email, identity.embeddedWallet, identity.loginMethod]
   );
 
   const ids = await db.query<{ id: string | number }>(

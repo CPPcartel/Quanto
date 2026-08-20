@@ -32,8 +32,18 @@ export function useAccount(): Account {
   const { wallets } = useWallets();
   /* eslint-enable react-hooks/rules-of-hooks */
 
+  /**
+   * An external wallet wins over the embedded one.
+   *
+   * This used to be `embedded ?? wallets[0]`, which showed the player the empty
+   * wallet Privy generated instead of the one holding their tokens. The server
+   * no longer takes holdings from here at all — it reads wallets proved to it by
+   * signature — but the address shown in the UI should still be the one that
+   * means something to the player.
+   */
   const embedded = wallets.find((w) => w.walletClientType === "privy");
-  const wallet = embedded ?? wallets[0];
+  const external = wallets.find((w) => w.walletClientType !== "privy");
+  const wallet = external ?? embedded;
 
   return {
     ready,

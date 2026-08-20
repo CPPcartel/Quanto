@@ -54,8 +54,8 @@ export function SignInWall() {
         </button>
 
         <p className="dim tiny signin-note">
-          Email, Google, X, Discord or a wallet. If you have no wallet, one is created for
-          you — you never have to think about it.
+          Sign in with an email or connect a wallet. You can connect a wallet later to
+          bring an NFT in — your city is yours either way.
         </p>
       </div>
     </div>

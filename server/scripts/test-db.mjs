@@ -109,8 +109,18 @@ check("floors round-trip", loaded?.floors.NVDA === 3 && loaded?.floors.TSLA === 
 const totals = await store.floorTotals();
 check("floor totals aggregate across players", totals.NVDA === 8, `NVDA=${totals.NVDA}`);
 
-const linked = await store.linkWallet("0xabc", "someone-else");
-check("existing wallet keeps its original save", linked === "bob", linked);
+/**
+ * Connecting a wallet attaches it; it no longer adopts a save.
+ *
+ * This assertion used to read the other way round — a wallet already seen
+ * brought its own save with it, because back then the wallet WAS the identity.
+ * With accounts that behaviour is a second identity system competing with the
+ * first, so the wallet is now refused and nobody's progress moves.
+ */
+const stolen = await store.linkWallet("0xabc", "alice");
+check("a wallet on another account is refused", stolen.ok === false, JSON.stringify(stolen));
+check("bob keeps it", (await store.walletsFor("bob")).includes("0xabc"));
+check("alice did not acquire it", !(await store.walletsFor("alice")).includes("0xabc"));
 
 console.log("\n[6] leaderboards");
 const boards = new Leaderboards(db);

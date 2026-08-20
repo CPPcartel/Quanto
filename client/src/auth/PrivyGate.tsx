@@ -25,16 +25,28 @@ export function PrivyGate({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={APP_ID}
       config={{
-        // Email and socials first: most players arriving from a link have no
-        // wallet and no interest in getting one. External wallets still work
-        // for people who already have them.
-        loginMethods: ["email", "google", "twitter", "discord", "wallet"],
+        /**
+         * Must match what is actually enabled in the Privy dashboard. Listing a
+         * method that is switched off there renders nothing for it, so the panel
+         * silently promises a button that never appears.
+         */
+        loginMethods: ["email", "wallet"],
 
         embeddedWallets: {
           ethereum: {
-            // The whole point: a player logs in with an email and quietly ends
-            // up with a real, self-custodial wallet.
-            createOnLogin: "users-without-wallets",
+            /**
+             * Off, on purpose.
+             *
+             * Privy is this game's identity, not its wallet. Holdings are read
+             * from wallets proved to our own server by signature, so an
+             * auto-generated empty wallet adds an address that can never hold
+             * anything and used to get mistaken for the player's real one.
+             *
+             * This can be turned back on safely — nothing reads holdings from it
+             * any more — the day embedded wallets earn their place, which is
+             * when a player without one needs somewhere to keep $BLOCK.
+             */
+            createOnLogin: "off",
           },
         },
 
