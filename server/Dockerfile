@@ -1,7 +1,13 @@
-# Node 22+ required. The original reason was the built-in node:sqlite module;
-# persistence has since moved to Postgres (via PGlite locally), but 22 is still
-# the floor — the toolchain and @electric-sql/pglite both expect it.
-FROM node:22-slim AS build
+# Node 24, and the npm it ships with, is what this image needs.
+#
+# 22 was the floor for the language features; the reason for 24 is npm. The
+# lockfile is written by npm 11, which marks bufferutil and utf-8-validate —
+# ws's optional native accelerators — as `optional: true`. npm 10, which
+# node:22-slim ships, does not read those entries the same way and fails the
+# build with "Missing: utf-8-validate@5.0.10 from lock file". `npm ci` is
+# strict by design, so the fix is to match the npm that wrote the lockfile
+# rather than to loosen the install.
+FROM node:24-slim AS build
 
 WORKDIR /app
 COPY package*.json ./
@@ -11,7 +17,7 @@ COPY src ./src
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-FROM node:22-slim AS runtime
+FROM node:24-slim AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
