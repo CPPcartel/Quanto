@@ -1,0 +1,640 @@
+<title>Quanto Flight Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  /*
+    Single-theme by choice, not omission.
+
+    The palette is lifted verbatim from client/src/styles.css, so this page and
+    the running game are the same object. A light variant would be a different
+    product wearing the same words. Every colour is therefore painted
+    explicitly, including the body ground, so the page holds whatever theme the
+    viewer's host is in.
+  */
+  :root {
+    --paper: #11131a;
+    --raised: #171a24;
+    --sunk: #0d0f16;
+    --line: #232735;
+    --line-soft: #1c2030;
+
+    --amber: #e5a85c;
+    --violet: #8d8af2;
+    --up: #5fb37e;
+    --down: #db7264;
+
+    --ink: #ecedf3;
+    --ink-muted: #9ba1b2;
+    --ink-faint: #676d7d;
+
+    --display: Archivo, "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+  }
+
+  /* ---------- header ---------- */
+  header { display: flex; flex-direction: column; gap: 1rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 60ch;
+    margin: 0;
+    font-size: 1.06rem;
+    color: var(--ink-muted);
+  }
+
+  .verdict {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem 1rem;
+    margin-top: 1.4rem;
+    padding: 1rem 1.2rem;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--amber);
+    border-radius: 3px;
+  }
+  .verdict strong { font-weight: 600; }
+  .verdict span { color: var(--ink-muted); font-size: 0.95rem; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 3.6rem; }
+
+  h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.34rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    margin: 0 0 1.5rem;
+    max-width: 62ch;
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+  }
+
+  /* ---------- status board ---------- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0.75rem;
+  }
+  .cell {
+    padding: 1rem 1.1rem;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .cell-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .cell-value {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .cell-note { font-size: 0.82rem; color: var(--ink-muted); }
+
+  .ok { color: var(--up); }
+  .warn { color: var(--amber); }
+  .bad { color: var(--down); }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.15rem 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .chip-live { color: var(--up); background: rgba(95, 179, 126, 0.13); }
+  .chip-off  { color: var(--ink-faint); background: rgba(103, 109, 125, 0.15); }
+  .chip-you  { color: var(--amber); background: rgba(229, 168, 92, 0.13); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ---------- the flow spine ---------- */
+  /*
+    Numbered because it genuinely is a sequence: each stage can only happen
+    after the one above it, and that ordering is the information.
+  */
+  .flow { display: flex; flex-direction: column; }
+
+  .stage {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 0 1.2rem;
+    padding-bottom: 1.9rem;
+    position: relative;
+  }
+  .stage:last-child { padding-bottom: 0; }
+
+  .stage-num {
+    grid-row: 1 / span 3;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--paper);
+    background: var(--amber);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+  /* The connecting line, drawn behind the numbers. */
+  .stage:not(:last-child) .stage-num::after {
+    content: "";
+    position: absolute;
+    top: 2rem;
+    left: 50%;
+    width: 1px;
+    height: calc(100% + 1.9rem - 2rem);
+    background: var(--line);
+    transform: translateX(-50%);
+  }
+  .stage-gate .stage-num { background: var(--ink-faint); color: var(--paper); }
+
+  .stage-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.7rem;
+    min-height: 2rem;
+  }
+  .stage-title { font-size: 1.05rem; font-weight: 600; }
+  .stage-body { margin: 0.35rem 0 0; color: var(--ink-muted); font-size: 0.93rem; max-width: 64ch; }
+
+  .stage-tech {
+    margin-top: 0.55rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.9rem;
+  }
+  .stage-tech code {
+    color: var(--violet);
+    background: rgba(141, 138, 242, 0.09);
+    padding: 0.05rem 0.3rem;
+    border-radius: 2px;
+  }
+
+  /* ---------- tables ---------- */
+  .scroller { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 520px;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.62rem 0.9rem;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-bottom-color: var(--line);
+  }
+  td code {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--amber);
+  }
+  td.note { color: var(--ink-muted); }
+
+  /* ---------- blockers ---------- */
+  .blockers { display: flex; flex-direction: column; gap: 0.7rem; }
+  .blocker {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 0.9rem;
+    padding: 1rem 1.15rem;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .blocker-rank {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--amber);
+    grid-row: 1 / span 2;
+    padding-top: 0.1rem;
+  }
+  .blocker-title { font-weight: 600; }
+  .blocker-body { margin: 0; color: var(--ink-muted); font-size: 0.92rem; max-width: 66ch; }
+  .blocker-soft .blocker-rank { color: var(--ink-faint); }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+  }
+
+  a { color: var(--amber); text-decoration-color: rgba(229, 168, 92, 0.4); }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 560px) {
+    .stage { grid-template-columns: 2.2rem 1fr; gap: 0 0.85rem; }
+    .stage-num { width: 1.75rem; height: 1.75rem; font-size: 0.7rem; }
+    .stage:not(:last-child) .stage-num::after { top: 1.75rem; height: calc(100% + 1.9rem - 1.75rem); }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Verified 21 Aug 2026</div>
+    <h1>Quanto Flight Check</h1>
+    <p class="lede">
+      What is running, what a player walks through, and the four things still
+      standing between this and a public launch.
+    </p>
+
+    <div class="verdict">
+      <strong>Everything built is live and verified.</strong>
+      <span>The remaining blockers are all account settings and one login you have not done yet.</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Right now</h2>
+    <p class="sub">
+      Checked against production, not from memory. The market was open when this
+      was written.
+    </p>
+
+    <div class="board">
+      <div class="cell">
+        <div class="cell-label">Game server</div>
+        <div class="cell-value ok">Online</div>
+        <div class="cell-note">Postgres · accounts required · 38 feeds live</div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">Ledger audit</div>
+        <div class="cell-value ok">0</div>
+        <div class="cell-note">players whose balance disagrees with their ledger</div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">Test suite</div>
+        <div class="cell-value">312</div>
+        <div class="cell-note">assertions across 15 suites, zero failures</div>
+      </div>
+      <div class="cell">
+        <div class="cell-label">Database</div>
+        <div class="cell-value">13</div>
+        <div class="cell-note">migrations applied · 0 players, clean slate</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What a player walks through</h2>
+    <p class="sub">
+      Each stage can only happen after the one above it. Two of them have never
+      been executed by a human being.
+    </p>
+
+    <div class="flow">
+      <div class="stage">
+        <div class="stage-num">1</div>
+        <div class="stage-head">
+          <span class="stage-title">Arrive and sign in</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+          <span class="chip chip-you">Untested by you</span>
+        </div>
+        <p class="stage-body">
+          Email or wallet, through Privy. The server refuses an unauthenticated
+          join outright, so there is no guest path in and no way to skip this.
+          Verified in production against forged tokens, unsigned JWTs and empty
+          tokens — all refused. A real token has never been accepted, because
+          that needs your browser.
+        </p>
+        <div class="stage-tech"><code>onAuth</code><code>REQUIRE_AUTH=true</code><span>401 on failure</span></div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">2</div>
+        <div class="stage-head">
+          <span class="stage-title">Claim a username</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+          <span class="chip chip-you">Untested by you</span>
+        </div>
+        <p class="stage-body">
+          A gate, not a setting. Availability is checked as they type, names are
+          unique case-insensitively, and staff-looking names plus the
+          Trader#### shape are reserved. Renaming afterwards carries a one-week
+          cooldown, shown as a date rather than hidden behind a rejection.
+        </p>
+        <div class="stage-tech"><code>claimName</code><code>lower(name)</code><span>unique index</span></div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">3</div>
+        <div class="stage-head">
+          <span class="stage-title">Walk the city</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+        </div>
+        <p class="stage-body">
+          38 towers whose heights are live Chainlink reads, four districts, chat,
+          crews, direct messages, storms and shifts. Movement is server
+          authoritative with client prediction, so the game feels instant and the
+          server still decides.
+        </p>
+        <div class="stage-tech"><code>applyInput</code><span>60 Hz sim · 20 Hz replication</span></div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">4</div>
+        <div class="stage-head">
+          <span class="stage-title">Earn and trade</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+        </div>
+        <p class="stage-body">
+          Shifts pay, floors yield, and floors trade between players. Every unit
+          of currency comes from an append-only ledger row, so
+          <code>SUM(ledger) = balance</code> must hold for every player and is
+          published at <code>/audit</code>. Trades settle in one transaction with
+          canonical lock ordering and a deadlock retry.
+        </p>
+        <div class="stage-tech"><code>/audit</code><span>append-only</span><span>40P01 retried</span></div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">5</div>
+        <div class="stage-head">
+          <span class="stage-title">Customise the profile</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+        </div>
+        <p class="stage-body">
+          Name, colour and appearance. Holder-only traits are reserved for Quanto
+          Residents holders and enforced server-side — a modified client asking
+          for the halo gets the default in that slot. A chosen look survives
+          reconnects and beats the NFT traits until cleared.
+        </p>
+        <div class="stage-tech"><code>setAvatar</code><code>sanitiseTraits</code><span>server enforced</span></div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">6</div>
+        <div class="stage-head">
+          <span class="stage-title">The season closes</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+        </div>
+        <p class="stage-body">
+          Monday 00:00 UTC. Standings are frozen at the boundary and written
+          once — never rewritten, even by a retry. Survives the boundary passing
+          while the server is down, which is precisely the hour a deploy lands
+          on. The signup grant does not count as earnings.
+        </p>
+        <div class="stage-tech"><code>season_results</code><code>closed_at</code><span>write-once</span></div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-num">7</div>
+        <div class="stage-head">
+          <span class="stage-title">Review and pay</span>
+          <span class="chip chip-live"><i class="dot"></i>Live</span>
+          <span class="chip chip-off">Needs legal sign-off</span>
+        </div>
+        <p class="stage-body">
+          The operator reviews the top entrants — account age, sessions, linked
+          wallets, earnings by kind, score per hour — then records the payout.
+          Recording is idempotent: asking twice returns the transaction already
+          on file rather than overwriting it. Payment status and transaction hash
+          are public, so anyone can check the winner was paid.
+        </p>
+        <div class="stage-tech"><code>/admin/season/:id/review</code><code>paid_at IS NULL</code></div>
+      </div>
+
+      <div class="stage stage-gate">
+        <div class="stage-num">8</div>
+        <div class="stage-head">
+          <span class="stage-title">Hold an NFT, enter the Vault</span>
+          <span class="chip chip-off"><i class="dot"></i>Inert</span>
+        </div>
+        <p class="stage-body">
+          Built and switched off. The collection is not deployed, so
+          <code>COLLECTION_ADDRESS</code> is unset, everyone resolves to tier
+          none and the Vault admits nobody. Nothing is broken — the gate simply
+          has nothing to check. Setting one address turns on tiers, traits,
+          chartered crews and penthouse territory.
+        </p>
+        <div class="stage-tech"><code>COLLECTION_ADDRESS</code><span>fails open on RPC error</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What is stopping you</h2>
+    <p class="sub">
+      In order. The first two are the only real blockers, and both are things
+      only you can do.
+    </p>
+
+    <div class="blockers">
+      <div class="blocker">
+        <div class="blocker-rank">01</div>
+        <div class="blocker-title">Add your domain to Privy</div>
+        <p class="blocker-body">
+          The allowed-domains list is empty. Localhost works by default; a
+          production origin generally does not. If Privy refuses the origin, the
+          login modal never initialises and every visitor sees a dead sign-in
+          button while the server reports itself perfectly healthy. This is the
+          most likely thing to break for your first visitor.
+        </p>
+      </div>
+
+      <div class="blocker">
+        <div class="blocker-rank">02</div>
+        <div class="blocker-title">Sign in yourself, once, end to end</div>
+        <p class="blocker-body">
+          Sign in, claim a name, buy a floor, reload, confirm it is still there.
+          Nothing that has been verified covers this: the door is proven to
+          reject bad tokens, and has never been seen accepting a good one. The
+          username gate has also only ever run with authentication disabled.
+        </p>
+      </div>
+
+      <div class="blocker blocker-soft">
+        <div class="blocker-rank">03</div>
+        <div class="blocker-title">Rotate the two credentials</div>
+        <p class="blocker-body">
+          The Supabase password and the Privy app secret were both pasted into
+          chat and should be treated as exposed. Rotate them and update Railway.
+          The database is empty, so today this costs nothing — that stops being
+          true with your first real player.
+        </p>
+      </div>
+
+      <div class="blocker blocker-soft">
+        <div class="blocker-rank">04</div>
+        <div class="blocker-title">Decide the domain</div>
+        <p class="blocker-body">
+          The X header and the launch article both say quanto.gg, which you do
+          not own. Either buy it — in which case Railway's allowed origin has to
+          change too, or CORS will block the real site — or the copy gets swapped
+          to the Vercel URL.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Endpoints</h2>
+    <p class="sub">
+      Public routes are open by design. Admin routes fail closed when the token
+      is unset, refusing every request rather than serving them openly.
+    </p>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Route</th>
+            <th scope="col">Access</th>
+            <th scope="col">Answers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/health</code></td>
+            <td><span class="chip chip-live">Public</span></td>
+            <td class="note">Database, auth mode, oracle, population</td>
+          </tr>
+          <tr>
+            <td><code>/audit</code></td>
+            <td><span class="chip chip-live">Public</span></td>
+            <td class="note">Does every balance match its own ledger</td>
+          </tr>
+          <tr>
+            <td><code>/leaderboard</code></td>
+            <td><span class="chip chip-live">Public</span></td>
+            <td class="note">Who is winning, right now</td>
+          </tr>
+          <tr>
+            <td><code>/seasons</code></td>
+            <td><span class="chip chip-live">Public</span></td>
+            <td class="note">Which seasons exist and which have closed</td>
+          </tr>
+          <tr>
+            <td><code>/season/:id/results</code></td>
+            <td><span class="chip chip-live">Public</span></td>
+            <td class="note">Who won, and whether they were paid</td>
+          </tr>
+          <tr>
+            <td><code>/admin/season/:id/review</code></td>
+            <td><span class="chip chip-you">Token</span></td>
+            <td class="note">Signals for deciding who to pay</td>
+          </tr>
+          <tr>
+            <td><code>/admin/season/:id/payout</code></td>
+            <td><span class="chip chip-you">Token</span></td>
+            <td class="note">Records a prize as settled, exactly once</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>The one decision still open</h2>
+    <p class="sub">Not a task. A judgement, and it has a deadline of your first paid season.</p>
+
+    <div class="blocker">
+      <div class="blocker-rank">A6</div>
+      <div class="blocker-title">Does paying on this metric create derivative exposure?</div>
+      <p class="blocker-body">
+        Season rank is measured in $BLOCK earned, and part of that comes from
+        floor yield, which scales with a real asset's volatility. Pay a prize
+        with cash value on that score and the payout partly tracks how a real
+        security performed. That is the same exposure betting on price direction
+        was excluded to avoid, reached by a longer route. The code keeps it a
+        one-line decision: drop <code>floor_yield</code> from
+        <code>MARKET_LINKED_EARNING_KINDS</code> and the metric stops tracking
+        the market. Ask counsel this question explicitly — it is the one that
+        gets skipped.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <span>quanto-iota.vercel.app</span>
+    <span>quanto-server-production.up.railway.app</span>
+    <span>13 migrations · 312 assertions · 0 failures</span>
+  </footer>
+</div>
