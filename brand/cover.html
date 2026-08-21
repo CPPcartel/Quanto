@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  /*
+    X header, 1500x500.
+
+    Two constraints drive the whole layout and neither is aesthetic.
+
+    The avatar punches a hole in the bottom-left — roughly 200px square once you
+    allow for the ring and its offset — so nothing that must be read may live
+    there. And X crops the header's height aggressively on narrow screens, biting
+    from the top and bottom, so the wordmark sits on the vertical centre line
+    where it survives the crop.
+
+    Everything else is the game's own palette, lifted from client/src/styles.css.
+  */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink: #11131a;
+    --ink-soft: #171a24;
+    --amber: #e5a85c;
+    --violet: #8d8af2;
+    --up: #5fb37e;
+    --down: #db7264;
+    --text: #ecedf3;
+    --muted: #9ba1b2;
+    --faint: #676d7d;
+  }
+
+  body {
+    width: 1500px;
+    height: 500px;
+    background: var(--ink);
+    overflow: hidden;
+    position: relative;
+    font-family: Archivo, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* A cold wash from the top so the sky has depth without a visible gradient
+     band, plus a warm pool behind the skyline where the city glows. */
+  .sky {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 90% at 72% 118%, rgba(229,168,92,0.20) 0%, rgba(229,168,92,0) 58%),
+      radial-gradient(90% 70% at 20% -10%, rgba(141,138,242,0.13) 0%, rgba(141,138,242,0) 60%),
+      linear-gradient(180deg, #0d0f16 0%, #11131a 55%, #151824 100%);
+  }
+
+  /* The isometric floor grid, faint. It is the game's actual ground plane and
+     it stops the lower third reading as empty black. */
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(63.43deg, rgba(155,161,178,0.055) 0 1px, transparent 1px 46px),
+      repeating-linear-gradient(-63.43deg, rgba(155,161,178,0.055) 0 1px, transparent 1px 46px);
+    mask-image: linear-gradient(180deg, transparent 52%, #000 88%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 52%, #000 88%);
+  }
+
+  .skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 250px; }
+
+  /*
+    A scrim under the copy.
+
+    The first render put 116px type straight over a lit skyline and both lost:
+    the towers turned the letterforms into noise, and the letters cut the city
+    into fragments. Darkening the left third costs nothing — the city is still
+    plainly there — and buys a clean plate to set type on.
+  */
+  .scrim {
+    position: absolute; inset: 0; z-index: 2;
+    background: linear-gradient(90deg,
+      rgba(10,12,17,0.97) 0%,
+      rgba(10,12,17,0.93) 28%,
+      rgba(10,12,17,0.55) 44%,
+      rgba(10,12,17,0) 62%);
+  }
+
+  /*
+    One tower. Height is set inline from real ticker data.
+
+    Deliberately hard-edged and flat-topped: the game renders extruded pixel
+    boxes, not glass towers, and a soft gradient here would promise a different
+    product to anyone who then opens the site.
+  */
+  .tower {
+    position: absolute; bottom: 0;
+    background: linear-gradient(180deg, var(--top) 0%, var(--body) 14%, var(--base) 100%);
+    border-top: 3px solid var(--cap);
+  }
+  /* Lit windows: the direct readout of the player economy in-game. */
+  .tower::after {
+    content: "";
+    position: absolute; inset: 10px 5px 0 5px;
+    background-image:
+      repeating-linear-gradient(90deg, var(--win) 0 3px, transparent 3px 11px),
+      repeating-linear-gradient(180deg, var(--win) 0 3px, transparent 3px 13px);
+    background-blend-mode: multiply;
+    opacity: 0.28;
+  }
+
+  .sym {
+    position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px; letter-spacing: 0.09em; color: var(--faint);
+    white-space: nowrap;
+  }
+
+  .ground {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 34px;
+    background: linear-gradient(180deg, rgba(17,19,26,0) 0%, #0b0d13 62%);
+  }
+
+  /* ---- copy ------------------------------------------------------------- */
+  .plate {
+    position: absolute;
+    left: 96px; top: 50%; transform: translateY(-50%);
+    z-index: 5;
+  }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 15px; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 116px; font-weight: 900;
+    letter-spacing: -0.035em; line-height: 0.86;
+    color: var(--text);
+    text-shadow: 0 0 90px rgba(229,168,92,0.28);
+  }
+
+  .rule {
+    width: 92px; height: 4px; margin: 26px 0 22px;
+    background: var(--amber);
+  }
+
+  .tag {
+    font-size: 30px; font-weight: 600; letter-spacing: -0.012em;
+    color: var(--muted);
+  }
+  .tag b { color: var(--text); font-weight: 700; }
+
+  /* Bottom-right, clear of the avatar hole on the opposite corner. */
+  .meta {
+    position: absolute; right: 60px; top: 42px; z-index: 5;
+    display: flex; gap: 26px; align-items: center;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 14px; letter-spacing: 0.1em;
+    color: var(--faint); text-transform: uppercase;
+  }
+  .meta span { display: flex; align-items: center; gap: 9px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--up); box-shadow: 0 0 12px var(--up); }
+</style>
+</head>
+<body>
+  <div class="sky"></div>
+  <div class="grid"></div>
+
+  <div class="skyline" id="skyline"></div>
+  <div class="ground"></div>
+  <div class="scrim"></div>
+
+  <div class="plate">
+    <div class="eyebrow">Live market · Robinhood Chain</div>
+    <h1>QUANTO</h1>
+    <div class="rule"></div>
+    <div class="tag">The skyline <b>is</b> the chart.</div>
+  </div>
+
+  <div class="meta">
+    <span><i class="dot"></i>38 feeds live</span>
+    <span>3,338 residents</span>
+    <span>quanto.gg</span>
+  </div>
+
+<script>
+/*
+  Towers come from the real ticker list in server/src/config/tickers.ts, in the
+  real district order. A decorative skyline would have been faster; this one is
+  the actual city, so the header and the product cannot drift apart.
+
+  Heights are deterministic from the symbol, not random, so the header renders
+  identically every time it is rebuilt.
+*/
+const TICKERS = [
+  ["NVDA","tech"],["AAPL","tech"],["MSFT","tech"],["GOOGL","tech"],["META","tech"],
+  ["AMZN","tech"],["AMD","tech"],["ORCL","tech"],["INTC","tech"],["MU","tech"],
+  ["ASML","tech"],["TSM","tech"],["DELL","tech"],["SNDK","tech"],["BABA","tech"],
+  ["ETH","crypto"],["BTC","crypto"],["LINK","crypto"],["COIN","crypto"],["MSTR","crypto"],
+  ["CLSK","crypto"],["CRCL","crypto"],
+  ["TSLA","moonshot"],["GME","moonshot"],["PLTR","moonshot"],["IONQ","moonshot"],
+  ["RGTI","moonshot"],["RKLB","moonshot"],["NBIS","moonshot"],["CRWV","moonshot"],
+  ["SPCX","moonshot"],["USAR","moonshot"],
+  ["SPY","index"],["QQQ","index"],["SGOV","index"],["SLV","index"],["USO","index"],["EWY","index"],
+];
+
+const DISTRICT = {
+  tech:     "#5B8DEF",
+  crypto:   "#E5A85C",
+  moonshot: "#C77DFF",
+  index:    "#6EE7B7",
+};
+
+/** FNV-1a, so a symbol always produces the same tower. */
+function hash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) / 4294967295;
+}
+
+function shade(hex, t) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * (1 - t));
+  const g = Math.round(((n >> 8) & 255) * (1 - t));
+  const b = Math.round((n & 255) * (1 - t));
+  return `rgb(${r},${g},${b})`;
+}
+
+const host = document.getElementById("skyline");
+const W = 1500;
+const GAP = 5;
+const w = Math.floor((W - GAP * (TICKERS.length + 1)) / TICKERS.length);
+
+/*
+  Five towers are named. Labelling all 38 turns the base into grey noise at
+  header size, and labelling none loses the single most convincing detail —
+  that these are real listed symbols. The named ones are the recognisable
+  megacaps plus BTC, spread across the width.
+*/
+const LABELLED = new Set(["NVDA", "BTC", "TSLA", "SPY", "ETH"]);
+
+TICKERS.forEach(([sym, district], i) => {
+  const h = hash(sym);
+  const accent = DISTRICT[district];
+  // 62..300px. The floor matters: a very short tower reads as a gap.
+  const height = Math.round(46 + h * 150);
+
+  const el = document.createElement("div");
+  el.className = "tower";
+  el.style.left = `${GAP + i * (w + GAP)}px`;
+  el.style.width = `${w}px`;
+  el.style.height = `${height}px`;
+  el.style.setProperty("--cap", accent);
+  el.style.setProperty("--top", shade(accent, 0.42));
+  el.style.setProperty("--body", shade(accent, 0.66));
+  el.style.setProperty("--base", shade(accent, 0.86));
+  el.style.setProperty("--win", accent);
+
+  host.appendChild(el);
+});
+</script>
+</body>
+</html>
