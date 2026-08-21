@@ -157,6 +157,7 @@ export async function connect() {
     $(state).players.onAdd((p: any, sessionId: string) => {
       if (sessionId === joined.sessionId) {
         world.localName = p.name;
+        world.localNameClaimed = Boolean(p.nameClaimed);
         world.localColor = p.color;
         // Seed prediction from the spawn the server picked.
         world.local.x = p.x;
@@ -177,6 +178,7 @@ export async function connect() {
           world.authoritative.lastSeq = p.lastSeq;
           world.authoritative.valid = true;
           world.localName = p.name;
+          world.localNameClaimed = Boolean(p.nameClaimed);
           world.localColor = p.color;
           world.localEmote = p.emote ?? "";
           world.localTier = (p.tier ?? "none") as any;
@@ -386,6 +388,39 @@ export async function connect() {
     });
 
     // ---- crews --------------------------------------------------------------
+    joined.onMessage(
+      "checkNameResult",
+      (r: { name?: string; ok: boolean; reason: string }) => {
+        world.nameCheck = { name: r.name ?? "", ok: r.ok, reason: r.reason };
+        markUiDirty();
+      }
+    );
+
+    joined.onMessage(
+      "claimNameResult",
+      (r: { ok: boolean; name?: string; reason?: string; readyAt?: number }) => {
+        world.nameClaim = r;
+        if (r.ok && r.name) {
+          world.localName = r.name;
+          world.localNameClaimed = true;
+        }
+        markUiDirty();
+      }
+    );
+
+    joined.onMessage("profile", (profile: typeof world.profile) => {
+      world.profile = profile;
+      markUiDirty();
+    });
+
+    joined.onMessage("setAvatarResult", (r: { ok: boolean; traits: string | null }) => {
+      if (r.ok && r.traits) world.localTraits = r.traits;
+      // Ask for the profile again so "using my NFT look" reflects reality
+      // rather than what the client assumed.
+      room?.send("getProfile");
+      markUiDirty();
+    });
+
     joined.onMessage("crewState", (crew: CrewView | null) => {
       world.crew = crew;
       markUiDirty();
@@ -555,6 +590,33 @@ export function onChat(fn: (msg: IncomingChat) => void) {
   return () => {
     chatListeners.delete(fn);
   };
+}
+
+/**
+ * Ask whether a name is free, as somebody types.
+ *
+ * Advisory only: the server settles it on a unique index when the claim
+ * arrives, because two people can both be told yes in the same instant.
+ */
+export function checkName(name: string) {
+  room?.send("checkName", name);
+}
+
+export function claimName(name: string) {
+  room?.send("claimName", name);
+}
+
+export function setColor(colour: string) {
+  room?.send("setColor", colour);
+}
+
+/** null restores the NFT look, or the default for a non-holder. */
+export function setAvatar(traits: string | null) {
+  room?.send("setAvatar", traits);
+}
+
+export function requestProfile() {
+  room?.send("getProfile");
 }
 
 export function sendChat(text: string, channel: "local" | "district" | "crew") {

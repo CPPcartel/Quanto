@@ -7,6 +7,7 @@ import { world, markUiDirty } from "./net/world";
 import { useAccount } from "./auth/useAccount";
 import { privyEnabled } from "./auth/PrivyGate";
 import { SignInWall, SignInUnavailable } from "./ui/SignInWall";
+import { ClaimName } from "./ui/ClaimName";
 
 /**
  * Whether an account is required to play.
@@ -114,12 +115,24 @@ export default function Game() {
   const locked =
     (requireSignIn && account.ready && !account.authenticated) || world.authRequired;
 
+  /**
+   * Signed in, connected, but has never picked a name.
+   *
+   * Deliberately after `locked`: somebody who is not signed in has a different
+   * problem, and stacking both panels would ask them to name an account they do
+   * not have yet. Also requires a live connection, since the claim needs a
+   * server to answer it.
+   */
+  const needsName =
+    !locked && world.conn === "connected" && world.sessionId !== "" && !world.localNameClaimed;
+
   return (
     <div className="shell">
       <div className="viewport" ref={host} />
       {/* The HUD stays mounted so the city keeps rendering behind the wall. */}
       <Hud />
       {locked && (privyEnabled ? <SignInWall /> : <SignInUnavailable />)}
+      {needsName && <ClaimName />}
     </div>
   );
 }

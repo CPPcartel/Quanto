@@ -16,7 +16,7 @@
  */
 import postgres from "postgres";
 
-const PREFIXES = ["e2e-", "msg-", "test-", "live-", "bench-"];
+const PREFIXES = ["e2e-", "msg-", "prof-", "test-", "live-", "bench-"];
 
 const url = process.env.DATABASE_URL;
 if (!url) {

@@ -9,6 +9,8 @@ import {
   BoardEntry,
   Listing,
 } from "./schema/CityState.js";
+import { checkUsername, renameAvailableAt, RENAME_COOLDOWN_MS } from "../config/username.js";
+import { sanitiseTraits } from "../config/traits.js";
 import { DISTRICTS, TICKERS, layoutFor } from "../config/tickers.js";
 import { parkLots, parkAt, CLUB } from "../config/parks.js";
 import type { ChainlinkPoller } from "../oracle/ChainlinkPoller.js";
@@ -218,11 +220,148 @@ export class CityRoom extends Room<CityState> {
       if (queue.length < 120) queue.push(cmd);
     });
 
-    this.onMessageSafe("setName", (client, name: string) => {
-      const player = this.state.players.get(client.sessionId);
-      if (player && typeof name === "string") {
-        player.name = name.slice(0, 16).replace(/[^\w \-]/g, "") || player.name;
+    /**
+     * Is this name free, and is it allowed?
+     *
+     * Advisory. Two players can both be told yes in the same instant, so the
+     * claim below settles it on the unique index rather than on this answer.
+     * It exists so somebody typing learns about a collision before they
+     * commit rather than after.
+     */
+    this.onMessageSafe("checkName", async (client, raw: unknown) => {
+      const deviceId = this.devices.get(client.sessionId);
+      const verdict = checkUsername(raw);
+      if (!verdict.ok) {
+        client.send("checkNameResult", { ok: false, reason: verdict.reason });
+        return;
       }
+      const free = await this.store.usernameAvailable(verdict.name, deviceId);
+      client.send("checkNameResult", {
+        name: verdict.name,
+        ok: free,
+        reason: free ? "" : "That name is taken.",
+      });
+    });
+
+    /**
+     * Claim a name, or change it.
+     *
+     * One handler for both. A first claim is free; a change is refused inside
+     * the cooldown, which is what stops somebody renaming to match a rival on
+     * the last day of a season.
+     */
+    this.onMessageSafe("claimName", async (client, raw: unknown) => {
+      const player = this.state.players.get(client.sessionId);
+      const deviceId = this.devices.get(client.sessionId);
+      if (!player || !deviceId) return;
+
+      const verdict = checkUsername(raw);
+      if (!verdict.ok) {
+        client.send("claimNameResult", { ok: false, reason: verdict.reason });
+        return;
+      }
+
+      // The row must exist before it can be renamed, and a brand-new account
+      // may still be sitting in the write-behind queue.
+      await this.ledger.flush().catch(() => {});
+
+      const profile = await this.store.profileFor(deviceId);
+      if (profile?.nameClaimed) {
+        const readyAt = renameAvailableAt(profile.nameSetAt);
+        if (Date.now() < readyAt) {
+          client.send("claimNameResult", {
+            ok: false,
+            reason: "You changed your name recently.",
+            readyAt,
+          });
+          return;
+        }
+      }
+
+      const result = await this.store.claimUsername(deviceId, verdict.name);
+      if (!result.ok) {
+        client.send("claimNameResult", { ok: false, reason: result.reason });
+        return;
+      }
+
+      /**
+       * Mirror it into memory before anything else can flush.
+       *
+       * The write-behind flusher upserts the player row absolutely, name
+       * included. Writing the database without updating the in-memory copy
+       * means the very next flush puts the old name back — the same class of
+       * bug as the trade balances, and just as invisible in one session.
+       */
+      player.name = verdict.name;
+      player.nameClaimed = true;
+      this.persist(client.sessionId);
+
+      client.send("claimNameResult", {
+        ok: true,
+        name: verdict.name,
+        readyAt: Date.now() + RENAME_COOLDOWN_MS,
+      });
+    });
+
+    /** The player's own colour. Cosmetic, cheap, no cooldown. */
+    this.onMessageSafe("setColor", (client, colour: unknown) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player || typeof colour !== "string") return;
+      // Six-digit hex only. Anything else is refused rather than coerced,
+      // because a half-parsed colour renders as black and looks like a bug.
+      if (!/^#[0-9a-fA-F]{6}$/.test(colour)) return;
+      player.color = colour;
+      this.persist(client.sessionId);
+    });
+
+    /**
+     * Choose an appearance.
+     *
+     * Holder-only trait options are enforced here, never on the client. A
+     * modified client asking for the halo gets the default in that slot, and
+     * every other slot it was entitled to.
+     *
+     * Sending null restores the NFT look, or the default for a non-holder.
+     */
+    this.onMessageSafe("setAvatar", async (client, raw: unknown) => {
+      const player = this.state.players.get(client.sessionId);
+      const deviceId = this.devices.get(client.sessionId);
+      if (!player || !deviceId) return;
+
+      const isHolder = player.tier !== "" && player.tier !== "none";
+
+      if (raw === null) {
+        await this.store.setAvatarTraits(deviceId, null);
+        // Back to whatever the chain says, or the default.
+        void this.refreshTier(client.sessionId);
+        client.send("setAvatarResult", { ok: true, traits: null });
+        return;
+      }
+
+      const traits = sanitiseTraits(raw, isHolder, player.traits);
+      await this.store.setAvatarTraits(deviceId, traits);
+      player.traits = traits;
+      client.send("setAvatarResult", { ok: true, traits });
+    });
+
+    /** Everything the owner may see about their own profile. */
+    this.onMessageSafe("getProfile", async (client) => {
+      const deviceId = this.devices.get(client.sessionId);
+      if (!deviceId) return;
+      const profile = await this.store.profileFor(deviceId);
+      if (!profile) return;
+      const player = this.state.players.get(client.sessionId);
+      client.send("profile", {
+        name: profile.name,
+        nameClaimed: profile.nameClaimed,
+        renameReadyAt: renameAvailableAt(profile.nameSetAt),
+        color: profile.color,
+        traits: player?.traits ?? profile.avatarTraits,
+        customAvatar: profile.avatarTraits !== null,
+        tier: player?.tier ?? "none",
+        createdAt: profile.createdAt,
+        walletCount: profile.walletCount,
+      });
     });
 
     /**
@@ -903,10 +1042,20 @@ export class CityRoom extends Room<CityState> {
       const wallets = await this.store.walletsFor(deviceId);
       const holding = await this.nft.holdingsFor(wallets);
 
+      /**
+       * Tier always comes from the chain. Appearance does not.
+       *
+       * A player who customised their look chose it on purpose, and having it
+       * silently revert to their token's traits on every reconnect would read
+       * as the customiser not working. Clearing the custom traits is how they
+       * ask for the token's look back.
+       */
+      const profile = await this.store.profileFor(deviceId);
+
       const player = this.state.players.get(sessionId);
       if (player) {
         player.tier = holding.tier;
-        player.traits = holding.traits;
+        player.traits = profile?.avatarTraits ?? holding.traits;
         player.penthouse = holding.tower ?? "";
       }
       // Persist even if they left mid-flight: the penthouse timestamp is what
@@ -1338,6 +1487,15 @@ export class CityRoom extends Room<CityState> {
       // Display only. Holdings are read from every linked wallet below.
       player.wallet = saved.wallet ?? "";
       player.name = saved.name || player.name;
+      player.nameClaimed = saved.nameClaimed;
+      /**
+       * A chosen look wins over the NFT one.
+       *
+       * refreshTier runs a moment later and would otherwise stamp the token's
+       * traits over a customisation the player made deliberately. Setting it
+       * here and checking again there keeps the choice.
+       */
+      if (saved.avatarTraits) player.traits = saved.avatarTraits;
       player.color = saved.color || player.color;
       player.block = saved.block;
       player.charge = Math.min(CHARGE_MAX, saved.charge);

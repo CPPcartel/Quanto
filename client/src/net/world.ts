@@ -205,6 +205,13 @@ export const world = {
   /** Last authoritative position from the server. */
   authoritative: { x: 0, z: 0, yaw: 0, lastSeq: 0, valid: false },
   localName: "",
+  /**
+   * False until the player has picked their own name.
+   *
+   * The client gates entry on this: an account that has never claimed one is
+   * shown the claim screen instead of being dropped into the city as Trader4821.
+   */
+  localNameClaimed: false,
   localColor: "#4F4DC4",
   localEmote: "",
   /** The local player's NFT tier and appearance. */
@@ -240,6 +247,30 @@ export const world = {
   dmThreads: [] as ThreadView[],
   dmUnread: 0,
   dmOpen: null as { device: string; name: string; lines: DirectLine[] } | null,
+
+  /**
+   * The player's own profile, as the server reports it.
+   *
+   * Only ever populated for the local player, and only on request. Nothing here
+   * is replicated to anyone else — a profile is the owner's view of their own
+   * account, not a public record.
+   */
+  profile: null as {
+    name: string;
+    nameClaimed: boolean;
+    renameReadyAt: number;
+    color: string;
+    traits: string | null;
+    customAvatar: boolean;
+    tier: string;
+    createdAt: string | null;
+    walletCount: number;
+  } | null,
+
+  /** Live availability answer while somebody types a name. */
+  nameCheck: null as { name: string; ok: boolean; reason: string } | null,
+  /** Result of the last claim attempt. */
+  nameClaim: null as { ok: boolean; reason?: string; readyAt?: number } | null,
 
   /** Player economy. Populated from server state; see server/src/game. */
   charge: 100,
@@ -382,6 +413,10 @@ export function resetWorld() {
   world.dmThreads = [];
   world.dmUnread = 0;
   world.dmOpen = null;
+  world.profile = null;
+  world.nameCheck = null;
+  world.nameClaim = null;
+  world.localNameClaimed = false;
   world.resting = false;
   world.localTier = "none";
   world.localTraits = "000010";

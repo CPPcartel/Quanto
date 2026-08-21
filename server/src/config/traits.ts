@@ -33,6 +33,61 @@ export const TRAIT_NAMES: Record<TraitSlot, readonly string[]> = {
   accessory: ["None", "Cap", "Headphones", "Antenna", "Halo"],
 };
 
+/**
+ * Trait options that only NFT holders may wear.
+ *
+ * The collection defines how residents look, so letting anyone assemble any
+ * appearance would quietly remove the reason to hold one. Reserving a handful of
+ * options keeps a Resident visibly worth something without taking customisation
+ * away from everybody else — a free player still picks from most of the range,
+ * they just cannot wear the halo.
+ *
+ * Indices, not names, because that is what a trait code stores. Kept small on
+ * purpose: a long exclusive list makes the free look feel like a demo.
+ */
+/** What a resident looks like before anything is chosen for them. */
+export const DEFAULT_TRAIT_CODE = "000010";
+
+export const HOLDER_ONLY: Partial<Record<TraitSlot, readonly number[]>> = {
+  // "Ink" and "Bone" — the two flattest, most deliberate jackets.
+  jacket: [8, 9],
+  // "Clear" — no tint at all, which reads as expensive precisely because
+  // every free option is coloured.
+  visor: [4],
+  // "Halo" and "Antenna".
+  accessory: [3, 4],
+};
+
+/** Is this option available to somebody at this tier? */
+export function traitAllowed(slot: TraitSlot, index: number, isHolder: boolean): boolean {
+  const options = TRAIT_NAMES[slot];
+  if (!Number.isInteger(index) || index < 0 || index >= options.length) return false;
+  if (isHolder) return true;
+  return !(HOLDER_ONLY[slot] ?? []).includes(index);
+}
+
+/**
+ * Coerce a submitted trait code into one this player is allowed to wear.
+ *
+ * Never rejects outright. A code that is malformed or reaches for a holder-only
+ * option falls back per slot rather than failing the whole change, because the
+ * alternative is a player poking at a customiser and being told "no" with no
+ * indication of which of six choices was the problem.
+ *
+ * Server-side and non-negotiable: the client decides what to show, this decides
+ * what is true. A modified client asking for the halo gets the default.
+ */
+export function sanitiseTraits(raw: unknown, isHolder: boolean, fallback = DEFAULT_TRAIT_CODE): string {
+  const code = typeof raw === "string" ? raw.toLowerCase() : "";
+  return TRAIT_SLOTS.map((slot, i) => {
+    const wanted = BASE36.indexOf(code[i] ?? "");
+    if (traitAllowed(slot, wanted, isHolder)) return BASE36[wanted];
+    // Fall back to whatever they had, and only then to the default.
+    const previous = BASE36.indexOf(fallback[i] ?? "");
+    return traitAllowed(slot, previous, isHolder) ? BASE36[previous] : "0";
+  }).join("");
+}
+
 const BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 /** One attribute as OpenSea writes it. */
@@ -65,4 +120,3 @@ export function encodeAttributes(attributes: MetadataAttribute[] | undefined): s
 }
 
 /** The code a player with no NFT carries. */
-export const DEFAULT_TRAIT_CODE = "000010";

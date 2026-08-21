@@ -540,6 +540,60 @@ const MIGRATIONS: Migration[] = [
     `,
   },
 
+  {
+    id: "013_profiles",
+    sql: `
+      /*
+        Usernames, and the appearance a player chose.
+
+        "name" was a display string with no constraints: two players could hold
+        the same one, and nothing recorded whether a player had ever picked it or
+        was still carrying the Trader#### the server invented. Neither mattered
+        while a name was decoration. Both matter once a name identifies somebody
+        on a leaderboard that pays out.
+
+        name_claimed separates "chose this" from "was given this", which is what
+        the claim screen keys off. Existing players are treated as unclaimed:
+        their current name was assigned by the server or taken from an email
+        address, and they should get the same chance to pick one as anybody new.
+
+        name_set_at drives the rename cooldown.
+
+        avatar_traits is nullable, and null means "use the NFT, or the default".
+        A holder who customises and later wants their token's look back sets it
+        back to null rather than trying to remember six indices.
+      */
+      ALTER TABLE players ADD COLUMN IF NOT EXISTS name_claimed  boolean NOT NULL DEFAULT false;
+      ALTER TABLE players ADD COLUMN IF NOT EXISTS name_set_at   timestamptz;
+      ALTER TABLE players ADD COLUMN IF NOT EXISTS avatar_traits text;
+
+      /*
+        Deduplicate before adding the constraint, or the migration fails on any
+        database that has ever been played on.
+
+        Collisions are near-certain: Trader#### is four random digits, and every
+        email-derived name is the part before the @. The lowest player id keeps
+        the bare name because it was there first; everyone else gets their id
+        appended, which is ugly and unique and which they can change on their
+        next login anyway.
+      */
+      UPDATE players p
+         SET name = p.name || '_' || p.id
+       WHERE EXISTS (
+         SELECT 1 FROM players q
+          WHERE lower(q.name) = lower(p.name) AND q.id < p.id
+       );
+
+      /*
+        Case-insensitive, because "Alice" and "alice" being different accounts is
+        an impersonation vector rather than a feature. A functional index is the
+        only way to say that in Postgres.
+      */
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_players_username
+        ON players (lower(name));
+    `,
+  },
+
 ];
 
 /**

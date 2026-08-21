@@ -5,6 +5,7 @@ import { CrewPanelBody } from "./Crew";
 import { MarketPanelBody } from "./Market";
 import { CollectionPanelBody } from "./Collection";
 import { InboxPanelBody } from "./Inbox";
+import { ProfilePanelBody } from "./Profile";
 
 /**
  * The centre dock: crew, market, collection and messages.
@@ -19,7 +20,7 @@ import { InboxPanelBody } from "./Inbox";
  * one `open` value, so there is one panel.
  */
 
-type DockPanel = "crew" | "market" | "residents" | "inbox" | null;
+type DockPanel = "crew" | "market" | "residents" | "inbox" | "profile" | null;
 
 /** Lets the HUD open a conversation from a name clicked in chat. */
 export interface DockHandle {
@@ -91,6 +92,18 @@ export const Dock = forwardRef<DockHandle>(function Dock(_props, ref) {
           {unread > 0 && <span className="dock-count alert">{unread}</span>}
         </button>
 
+        {/*
+          Last, and marked with the player's own colour rather than a tier dot.
+          It is the one tab that is about them rather than about the city.
+        */}
+        <button
+          className={`dock-tab ${open === "profile" ? "on" : ""}`}
+          onClick={() => toggle("profile")}
+        >
+          <span className="dock-dot" style={{ background: world.localColor }} />
+          <span className="mono">PROFILE</span>
+        </button>
+
         <button
           className={`dock-tab ${open === "residents" ? "on" : ""}`}
           onClick={() => toggle("residents")}
@@ -108,6 +121,7 @@ export const Dock = forwardRef<DockHandle>(function Dock(_props, ref) {
           {open === "crew" && <CrewPanelBody onClose={() => setOpen(null)} />}
           {open === "market" && <MarketPanelBody onClose={() => setOpen(null)} />}
           {open === "residents" && <CollectionPanelBody onClose={() => setOpen(null)} />}
+          {open === "profile" && <ProfilePanelBody />}
           {open === "inbox" && (
             <InboxPanelBody
               onClose={() => setOpen(null)}

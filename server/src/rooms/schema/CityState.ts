@@ -9,6 +9,15 @@ export class Player extends Schema {
   /** "idle" | "walk" | "run" — drives the client animation state machine. */
   @type("string") anim = "idle";
   @type("string") name = "";
+  /**
+   * False until the player has picked their own name.
+   *
+   * Replicated because the client gates entry on it: a fresh account is shown
+   * the claim screen rather than dropped into the city as Trader4821. Everyone
+   * can see everyone's flag, which is harmless — it says nothing but "this
+   * person has not chosen a name yet".
+   */
+  @type("boolean") nameClaimed = false;
   @type("string") color = "#4F4DC4";
   /** Last input sequence this player had processed; clients reconcile against it. */
   @type("number") lastSeq = 0;

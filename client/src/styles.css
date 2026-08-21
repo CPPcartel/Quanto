@@ -1411,3 +1411,161 @@ button.emote-btn:hover { border-color: var(--violet); }
   font-size: 0.82em;
   color: var(--amber);
 }
+
+/* ---------- name claim + profile ---------- */
+/*
+  Shared by the claim gate and the rename field in the profile, because they are
+  the same control in two places: type a name, learn immediately whether it is
+  yours to take. Splitting them would let the two drift into disagreeing about
+  what a valid name looks like.
+*/
+.claim-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0.9rem 0 0.4rem;
+}
+.claim-input {
+  flex: 1;
+  padding: 0.6rem 3.2rem 0.6rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  outline: none;
+}
+.claim-input:focus {
+  border-color: var(--amber);
+}
+/* Red only once the field has been touched — an empty box is not an error. */
+.claim-input.bad {
+  border-color: var(--down);
+}
+.claim-count {
+  position: absolute;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+.claim-status {
+  min-height: 1.1rem;
+  margin: 0;
+  font-size: 0.78rem;
+}
+.claim-status.good {
+  color: var(--up);
+}
+.claim-status.bad {
+  color: var(--down);
+}
+
+.profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-height: 60vh;
+  /* The trait grid is taller than the dock on a short window. */
+  overflow-y: auto;
+}
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.profile-heading {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.profile-name {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.profile-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.profile-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+}
+.profile-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+.profile-facts dt {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+.profile-facts dd {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.trait-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.trait-label {
+  flex: 0 0 4.6rem;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+.trait-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.trait-chip {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.trait-chip:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+.trait-chip.on {
+  color: var(--paper);
+  background: var(--amber);
+  border-color: var(--amber);
+}
+/*
+  Locked options stay visible rather than being hidden.
+
+  A holder-only trait nobody can see is not an incentive to hold anything; one
+  you can see and cannot pick is. Dimmed and not-allowed rather than removed.
+*/
+.trait-chip.locked {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.trait-chip .lock {
+  margin-left: 0.25rem;
+  color: var(--amber);
+}

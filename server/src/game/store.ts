@@ -14,6 +14,10 @@ import type { Db } from "../db/db.js";
 export interface SavedPlayer {
   deviceId: string;
   wallet: string | null;
+  /** Has the player actually chosen this name, or was it assigned? */
+  nameClaimed: boolean;
+  /** Chosen appearance, or null to use the NFT / default. */
+  avatarTraits: string | null;
   name: string;
   color: string;
   block: number;
@@ -45,13 +49,15 @@ export class Store {
       wallet: string | null;
       name: string;
       color: string;
+      name_claimed: boolean;
+      avatar_traits: string | null;
       block: number;
       charge: number;
       shards: number;
       x: number;
       z: number;
     }>(
-      `SELECT id, device_id, wallet, name, color,
+      `SELECT id, device_id, wallet, name, color, name_claimed, avatar_traits,
               block::float8 AS block, charge::float8 AS charge,
               shards, x, z
        FROM players WHERE device_id = $1`,
@@ -72,6 +78,8 @@ export class Store {
     return {
       deviceId: row.device_id,
       wallet: row.wallet,
+      nameClaimed: Boolean(row.name_claimed),
+      avatarTraits: row.avatar_traits,
       name: row.name,
       color: row.color,
       block: Number(row.block),
@@ -257,6 +265,101 @@ export class Store {
 
     // UNION can still return the same address twice when the timestamps differ.
     return [...new Set(rows.map((r) => r.address))];
+  }
+
+  /**
+   * Is this username free?
+   *
+   * Case-insensitive, matching the unique index. Asking is advisory only — two
+   * people can pass this check in the same instant — so the claim below still
+   * relies on the constraint rather than on this answer.
+   */
+  async usernameAvailable(name: string, forDevice?: string): Promise<boolean> {
+    const rows = await this.db.query<{ device_id: string }>(
+      "SELECT device_id FROM players WHERE lower(name) = lower($1)",
+      [name]
+    );
+    if (rows.length === 0) return true;
+    // Your own current name is "available" to you, so re-saving is not an error.
+    return forDevice !== undefined && rows[0].device_id === forDevice;
+  }
+
+  /**
+   * Claim or change a username.
+   *
+   * The unique index is the authority, not the availability check above. Two
+   * players claiming the same name in the same instant both see it free and
+   * both write; one of them loses on the constraint, and that is the answer.
+   * Checking first and trusting the result would hand the name to both.
+   *
+   * @returns ok, or why not.
+   */
+  async claimUsername(
+    deviceId: string,
+    name: string
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    try {
+      const rows = await this.db.query<{ device_id: string }>(
+        `UPDATE players
+            SET name = $2, name_claimed = true, name_set_at = now()
+          WHERE device_id = $1
+          RETURNING device_id`,
+        [deviceId, name]
+      );
+      if (rows.length === 0) return { ok: false, reason: "No save to name." };
+      return { ok: true };
+    } catch (err) {
+      // 23505 is a unique violation: somebody else holds it.
+      if ((err as { code?: string })?.code === "23505") {
+        return { ok: false, reason: "That name is taken." };
+      }
+      throw err;
+    }
+  }
+
+  /** Profile fields the owner is allowed to see about themselves. */
+  async profileFor(deviceId: string): Promise<{
+    name: string;
+    nameClaimed: boolean;
+    nameSetAt: string | null;
+    avatarTraits: string | null;
+    color: string;
+    createdAt: string | null;
+    walletCount: number;
+  } | null> {
+    const rows = await this.db.query<{
+      name: string;
+      name_claimed: boolean;
+      name_set_at: string | null;
+      avatar_traits: string | null;
+      color: string;
+      created_at: string | null;
+      wallets: number;
+    }>(
+      `SELECT p.name, p.name_claimed, p.name_set_at, p.avatar_traits, p.color, p.created_at,
+              (SELECT COUNT(*)::int FROM player_wallets w WHERE w.player_id = p.id) AS wallets
+         FROM players p WHERE p.device_id = $1`,
+      [deviceId]
+    );
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      name: row.name,
+      nameClaimed: row.name_claimed,
+      nameSetAt: row.name_set_at,
+      avatarTraits: row.avatar_traits,
+      color: row.color,
+      createdAt: row.created_at,
+      walletCount: Number(row.wallets),
+    };
+  }
+
+  /** Store a chosen appearance. null restores the NFT or default look. */
+  async setAvatarTraits(deviceId: string, traits: string | null): Promise<void> {
+    await this.db.query("UPDATE players SET avatar_traits = $2 WHERE device_id = $1", [
+      deviceId,
+      traits,
+    ]);
   }
 
   async walletFor(deviceId: string): Promise<string | null> {

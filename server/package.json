@@ -11,7 +11,7 @@
     "db:reset": "node scripts/reset-db.mjs",
     "test:market": "npm run build && node scripts/test-market.mjs",
     "test:e2e": "node scripts/test-e2e.mjs",
-    "test": "npm run build && node scripts/test-db.mjs && node scripts/test-territory.mjs && node scripts/test-market.mjs && node scripts/test-parks.mjs && node scripts/test-charge.mjs && node scripts/test-city-overlap.mjs && node scripts/test-shifts.mjs && node scripts/test-nft.mjs && node scripts/test-club.mjs && node scripts/test-chat.mjs && node scripts/test-messages.mjs && node scripts/test-ledger-sync.mjs && node scripts/test-wallets.mjs && node scripts/test-seasons.mjs",
+    "test": "npm run build && node scripts/test-db.mjs && node scripts/test-territory.mjs && node scripts/test-market.mjs && node scripts/test-parks.mjs && node scripts/test-charge.mjs && node scripts/test-city-overlap.mjs && node scripts/test-shifts.mjs && node scripts/test-nft.mjs && node scripts/test-club.mjs && node scripts/test-chat.mjs && node scripts/test-messages.mjs && node scripts/test-ledger-sync.mjs && node scripts/test-wallets.mjs && node scripts/test-seasons.mjs && node scripts/test-profiles.mjs",
     "test:messages": "npm run build && node scripts/test-messages.mjs",
     "test:messages:live": "node scripts/test-messages-live.mjs",
     "repair:balances": "node scripts/repair-balances.mjs",
@@ -19,7 +19,8 @@
     "test:wallets": "npm run build && node scripts/test-wallets.mjs",
     "test:seasons": "npm run build && node scripts/test-seasons.mjs",
     "test:prizes": "node scripts/test-prizes.mjs",
-    "seed:season": "node scripts/seed-closed-season.mjs"
+    "seed:season": "node scripts/seed-closed-season.mjs",
+    "test:profiles": "npm run build && node scripts/test-profiles.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.16.25",

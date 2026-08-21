@@ -72,8 +72,23 @@ await sleep(3000);
 check("alice sees bob", alice.state.players.size >= 2, `players=${alice.state.players.size}`);
 check("towers replicated", alice.state.tickers.size > 0, `tickers=${alice.state.tickers.size}`);
 
-alice.send("setName", "Alice");
-bob.send("setName", "Bob");
+/**
+ * Names are claimed, and unique across the whole city.
+ *
+ * setName used to be a free-form label with no constraints, so every run could
+ * call itself Alice. A username is now unique on lower(name), which means a
+ * second run reusing the name would be refused and the seller assertions below
+ * would compare against a name this run never got. The run stamp that already
+ * keeps device ids apart does the same job here.
+ */
+const ALICE_NAME = `Alice${RUN}`.slice(0, 16);
+const BOB_NAME = `Bob${RUN}`.slice(0, 16);
+alice.send("claimName", ALICE_NAME);
+bob.send("claimName", BOB_NAME);
+const aliceNamed = await next(alice, "claimNameResult");
+const bobNamed = await next(bob, "claimNameResult");
+check("alice claimed her name", aliceNamed.ok === true, JSON.stringify(aliceNamed));
+check("bob claimed his", bobNamed.ok === true, JSON.stringify(bobNamed));
 await sleep(300);
 
 console.log("\n[2] buying a floor");
@@ -163,7 +178,7 @@ check("floor listed", listed.ok, JSON.stringify(listed));
 await sleep(600);
 const visible = [...bob.state.listings.values()];
 check("listing replicated to bob", visible.length === 1, `listings=${visible.length}`);
-check("listing carries the seller", visible[0]?.sellerName === "Alice", visible[0]?.sellerName);
+check("listing carries the seller", visible[0]?.sellerName === ALICE_NAME, visible[0]?.sellerName);
 
 const bobBefore = bob.state.players.get(bob.sessionId).block;
 const aliceBefore = alice.state.players.get(alice.sessionId).block;
