@@ -156,7 +156,33 @@ export class MarketService {
    * sold twice, or sold after being traded away, fails cleanly and moves
    * nothing.
    */
+  /**
+   * Buy a listed floor.
+   *
+   * Retried on deadlock. Ordering the player locks makes one unlikely, but two
+   * trades touching an overlapping pair of players can still collide, and
+   * Postgres settles that by aborting one of them.
+   *
+   * Retrying is safe because the whole transaction rolls back: the listing claim
+   * that marks it sold is undone with everything else, so the second attempt
+   * sees exactly the state the first one did. Without this the losing player
+   * simply loses the trade for reasons they cannot see or act on, which is the
+   * worst possible way to spend somebody's money.
+   */
   async buy(buyerDevice: string, listingId: number): Promise<BuyResult> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.buyOnce(buyerDevice, listingId);
+      } catch (err) {
+        const deadlock = (err as { code?: string })?.code === "40P01";
+        if (!deadlock || attempt >= 2) throw err;
+        console.warn(`[market] deadlock on buy, retrying (attempt ${attempt + 2}/3)`);
+        await new Promise((r) => setTimeout(r, 40 * (attempt + 1)));
+      }
+    }
+  }
+
+  private async buyOnce(buyerDevice: string, listingId: number): Promise<BuyResult> {
     return this.db
       .begin<BuyResult>(async (tx) => {
       // Claim the listing first. Marking it sold up front means a second buyer
@@ -221,6 +247,26 @@ export class MarketService {
       );
 
       // ---- move the money --------------------------------------------------
+      /**
+       * Lock both player rows up front, in id order.
+       *
+       * The updates below touch the buyer and then the seller, always in that
+       * order. The ledger flusher touches whatever players its batch contains,
+       * in its own order. Two transactions taking the same locks in different
+       * orders is the definition of a deadlock, and Postgres resolves it by
+       * killing one of them — which is what happened here, repeatedly, under
+       * nothing more exotic than a trade landing during a routine flush.
+       *
+       * Taking both locks in a single statement ordered by id gives every
+       * writer the same sequence. Contending transactions then queue instead of
+       * dying. This has to happen before the first UPDATE, because by then the
+       * lock has already been taken in the wrong order.
+       */
+      await tx.query(
+        "SELECT id FROM players WHERE id IN ($1,$2) ORDER BY id FOR UPDATE",
+        [buyerId, sellerId]
+      );
+
       const buyerAfter = await one<{ block: number }>(
         tx,
         "UPDATE players SET block = block - $1 WHERE id = $2 RETURNING block::float8 AS block",

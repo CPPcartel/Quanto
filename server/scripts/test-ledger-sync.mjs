@@ -145,5 +145,84 @@ check(
   bobRows.length ? `block ${Number(bobRows[0].block).toFixed(4)}` : "no row written at all"
 );
 
+console.log("\n[5] a failed flush must not take the server down");
+/**
+ * This killed the live server.
+ *
+ * `flush` publishes its in-flight write so concurrent callers can await it, and
+ * did so with `write.then(fn)` — which returns a NEW promise. When the write
+ * failed and no other caller happened to be awaiting at that moment, that
+ * derived promise rejected with nobody listening. Node reported an unhandled
+ * rejection, this server treats those as fatal, and the process exited.
+ *
+ * The trigger was a Postgres deadlock: a routine, recoverable event that a
+ * database is entitled to produce whenever two transactions touch the same rows
+ * in different orders. Nothing about it should be fatal.
+ */
+{
+  const seen = [];
+  const onUnhandled = (err) => seen.push(err);
+  process.on("unhandledRejection", onUnhandled);
+
+  const deadlock = () => Object.assign(new Error("deadlock detected"), { code: "40P01" });
+
+  /** Fails every time, so the retry gives up and the error surfaces normally. */
+  const alwaysDeadlocks = {
+    begin: async () => {
+      throw deadlock();
+    },
+    query: async () => [],
+  };
+
+  const doomed = new Ledger(alwaysDeadlocks, 1);
+  doomed.post("nobody", { block: 0, shards: 0 }, "shift_payout", 10);
+
+  let surfaced = null;
+  await doomed.flush().catch((err) => {
+    surfaced = err;
+  });
+
+  // Unhandled rejections are reported on a later turn of the loop, so give the
+  // process a chance to report one before concluding there was none.
+  await new Promise((r) => setTimeout(r, 60));
+
+  check("the failure reaches the caller", surfaced?.code === "40P01", String(surfaced?.code));
+  check(
+    "and nothing is left unhandled",
+    seen.length === 0,
+    seen.length ? String(seen[0]?.message ?? seen[0]) : "none",
+  );
+
+  console.log("\n[6] a deadlock is retried, not surfaced");
+  /**
+   * Postgres resolves a deadlock by aborting one side and expects the loser to
+   * try again. By the retry the winner has committed and released its locks, so
+   * the correct behaviour is to succeed on the second attempt rather than to
+   * hand the caller an error it cannot do anything useful with.
+   */
+  let attempts = 0;
+  const failsOnce = {
+    begin: async (fn) => {
+      attempts++;
+      if (attempts === 1) throw deadlock();
+      return fn({ query: async () => [] });
+    },
+    query: async () => [],
+  };
+
+  const flaky = new Ledger(failsOnce, 1);
+  flaky.post("nobody", { block: 0, shards: 0 }, "shift_payout", 10);
+
+  let retryError = null;
+  await flaky.flush().catch((err) => {
+    retryError = err;
+  });
+
+  check("the retry succeeded", retryError === null, String(retryError?.message ?? ""));
+  check("it took two attempts", attempts === 2, String(attempts));
+
+  process.off("unhandledRejection", onUnhandled);
+}
+
 console.log(`\n${fails === 0 ? "ALL LEDGER SYNC CHECKS PASSED" : fails + " FAILED"}\n`);
 process.exit(fails ? 1 : 0);

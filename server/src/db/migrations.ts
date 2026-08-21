@@ -452,6 +452,63 @@ const MIGRATIONS: Migration[] = [
     `,
   },
 
+  {
+    id: "011_season_results",
+    sql: `
+      /*
+        Final standings, frozen at the season boundary.
+
+        The live leaderboard table is a rolling snapshot: it is deleted and
+        rewritten every refresh, so it answers "who is winning" and cannot
+        answer "who won". Those are different questions, and only the second one
+        can decide a prize.
+
+        The distinction was harmless while nothing rode on it. It stops being
+        harmless the moment a season result is worth money, because the rolling
+        snapshot is only ever as fresh as the last refresh — a player who takes
+        the lead in the final seconds of a season would be ranked by whatever
+        the board happened to hold up to a minute earlier.
+
+        Rows here are written once, at the boundary, and never updated. The
+        primary key is the guard: a restart mid-roll retries the insert and the
+        conflict is ignored, so a frozen result cannot be silently rewritten by
+        a later run.
+      */
+      CREATE TABLE IF NOT EXISTS season_results (
+        season_id bigint NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+        board     text   NOT NULL,
+        rank      integer NOT NULL,
+        player_id bigint REFERENCES players(id) ON DELETE SET NULL,
+        name      text   NOT NULL,
+        wallet    text,
+        score     numeric(20,4) NOT NULL,
+        detail    text   NOT NULL DEFAULT '',
+        frozen_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (season_id, board, rank)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_season_results_board
+        ON season_results(season_id, board, rank);
+
+      /*
+        player_id is ON DELETE SET NULL rather than CASCADE, unlike every other
+        table referencing players. A result is a historical fact about a
+        competition that already happened; deleting an account should not
+        rewrite the standings of a season it took part in, and the name is
+        already denormalised here precisely so the row survives.
+      */
+
+      /*
+        When the season actually closed. NULL means still open.
+
+        Distinct from ends_at, which is when it was *scheduled* to close. If the
+        server is down over a boundary the two differ, and a prize dispute is
+        exactly the moment somebody needs to know which one applied.
+      */
+      ALTER TABLE seasons ADD COLUMN IF NOT EXISTS closed_at timestamptz;
+    `,
+  },
+
 ];
 
 /**

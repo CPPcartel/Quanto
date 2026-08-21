@@ -31,6 +31,48 @@ export type LedgerKind =
   | "floor_sale"
   | "floor_buy";
 
+/**
+ * Which credits count toward a season's "earned" score.
+ *
+ * This used to be "any positive amount", which quietly made the 500 $BLOCK
+ * signup grant the single largest earning event available. Every new account
+ * entered the leaderboard at 500 and outranked somebody who had actually played
+ * their way to 400, and creating an account was worth more than a day of work —
+ * which is precisely the incentive not to hand a prize competition.
+ *
+ * A grant is not an earning. Neither is buying something, which is negative
+ * anyway. What remains is money that arrived because the player did something.
+ */
+export const SEASON_EARNING_KINDS: ReadonlySet<LedgerKind> = new Set([
+  "shift_payout",
+  "storm_shard",
+  "sign_traffic",
+  "floor_sale",
+  "landlord_royalty",
+]);
+
+/**
+ * Yield from owned floors, held separately because it is a live decision.
+ *
+ * Floor yield scales 1.0x to 3.5x with the tower's volatility tier, which is
+ * derived from the real asset's behaviour. That is harmless while the score is
+ * bragging rights. If a season's standings are ever paid out in something with
+ * cash value, this term makes the payout partly a function of how a real
+ * security performed — see docs/real-earning-plan.md section 2, which is the
+ * one risk in this design that can end the project rather than cost money.
+ *
+ * Included for now, because excluding it would make the headline board ignore
+ * the game's central mechanic. Remove this spread before the first paid season,
+ * or accept the exposure knowingly. It is deliberately one line either way.
+ */
+export const MARKET_LINKED_EARNING_KINDS: ReadonlySet<LedgerKind> = new Set(["floor_yield"]);
+
+/** The set actually applied. */
+const COUNTS_AS_EARNED: ReadonlySet<LedgerKind> = new Set([
+  ...SEASON_EARNING_KINDS,
+  ...MARKET_LINKED_EARNING_KINDS,
+]);
+
 /** Anything with a mutable balance — in practice the Colyseus Player schema. */
 export interface Balanced {
   block: number;
@@ -144,7 +186,11 @@ export class Ledger {
       meta: opts.meta ?? {},
     });
 
-    if (amount > 0) this.bumpSeason(deviceId, { earned: amount });
+    // Positive AND earned. See SEASON_EARNING_KINDS: a signup grant moves the
+    // balance up without anybody having earned anything.
+    if (amount > 0 && COUNTS_AS_EARNED.has(kind)) {
+      this.bumpSeason(deviceId, { earned: amount });
+    }
     if (kind === "floor_purchase") this.bumpSeason(deviceId, { floorsBought: 1 });
 
     // A flood of entries between flushes shouldn't grow without bound. Losing
@@ -250,16 +296,61 @@ export class Ledger {
     this.season = new Map();
     this.detached = new Map();
 
-    const write = this.db.begin(async (tx) => {
-      const ids = await upsertPlayers(tx, players, floors, entries, season, detached);
-      await insertLedger(tx, entries, ids);
-      await upsertFloors(tx, floors, ids);
-      await upsertSeason(tx, season, ids, this.seasonId);
-      // Last: increments must land after the absolute balance upserts above.
-      await applyDetached(tx, detached, ids);
-    });
-    // Published before awaiting, so a concurrent caller waits for THIS write.
-    this.inFlight = write.then(() => undefined);
+    /**
+     * Retried on deadlock, because losing one is not an error.
+     *
+     * Postgres breaks a deadlock by aborting one side; the loser is expected to
+     * try again, and by then the winner has committed and released its locks.
+     * Ordering the writes above makes this rare, but concurrent transactions
+     * elsewhere in the game can still produce one, and the correct response is
+     * a retry rather than an error the caller has to interpret.
+     *
+     * Only 40P01 is retried. Anything else is a real failure and must surface.
+     */
+    const runBatch = async (): Promise<void> => {
+      await this.db.begin(async (tx) => {
+        const ids = await upsertPlayers(tx, players, floors, entries, season, detached);
+        await insertLedger(tx, entries, ids);
+        await upsertFloors(tx, floors, ids);
+        await upsertSeason(tx, season, ids, this.seasonId);
+        // Last: increments must land after the absolute balance upserts above.
+        await applyDetached(tx, detached, ids);
+      });
+    };
+
+    const write = (async () => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await runBatch();
+          return;
+        } catch (err) {
+          const deadlock = (err as { code?: string })?.code === "40P01";
+          if (!deadlock || attempt >= 2) throw err;
+          console.warn(`[ledger] deadlock, retrying batch (attempt ${attempt + 2}/3)`);
+          // A short, growing pause so both losers do not collide again at once.
+          await new Promise((r) => setTimeout(r, 40 * (attempt + 1)));
+        }
+      }
+    })();
+    /**
+     * Published before awaiting, so a concurrent caller waits for THIS write.
+     *
+     * The rejection handler is not optional. `write.then(fn)` returns a NEW
+     * promise, and if the write fails while no other caller happens to be
+     * awaiting `inFlight`, that derived promise rejects with nobody listening.
+     * Node reports an unhandled rejection, and this server treats those as
+     * fatal — so a single failed flush took the whole process down. A database
+     * deadlock is a routine, recoverable event; it must never be able to do
+     * that.
+     *
+     * Swallowing here is safe because the real error is still delivered to the
+     * `await write` below, which is where it gets reported and where the batch
+     * is put back.
+     */
+    this.inFlight = write.then(
+      () => undefined,
+      () => undefined
+    );
 
     try {
       await write;
@@ -305,7 +396,20 @@ async function upsertPlayers(
   ]);
   if (needed.size === 0) return new Map();
 
-  for (const deviceId of needed) {
+  /**
+   * Always touch player rows in the same order.
+   *
+   * Two transactions that lock the same rows in opposite orders deadlock, and
+   * Postgres resolves that by killing one of them. This set is built from
+   * several maps whose iteration order follows whatever happened during the
+   * tick, so two consecutive flushes could genuinely disagree about the order —
+   * and a flush racing a floor-market transaction did, taking the server with
+   * it.
+   *
+   * Sorting costs nothing at this size and removes the whole class: any two
+   * writers that both lock in device-id order can queue, but cannot deadlock.
+   */
+  for (const deviceId of [...needed].sort()) {
     const row = players.get(deviceId);
     if (row) {
       await tx.query(

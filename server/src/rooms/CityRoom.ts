@@ -92,6 +92,36 @@ export class CityRoom extends Room<CityState> {
    * A client claiming a DID proves nothing; only a token Privy's API validates
    * counts. That check is the whole security boundary for accounts.
    */
+  /**
+   * Register a handler that cannot take the server down.
+   *
+   * Most handlers here are async and touch the database. Colyseus does not await
+   * them, so a rejected handler becomes an unhandled rejection — and this server
+   * treats those as fatal, by design, because continuing in an unknown state is
+   * usually worse. The combination meant one player's trade hitting a database
+   * deadlock disconnected everybody.
+   *
+   * A deadlock, a dropped connection or a statement timeout are all routine and
+   * recoverable. The player whose action failed should learn about it; every
+   * other player in the city should not even notice.
+   */
+  private onMessageSafe<T>(type: string, handler: (client: Client, message: T) => unknown) {
+    this.onMessage(type, async (client: Client, message: T) => {
+      try {
+        await handler(client, message);
+      } catch (err) {
+        console.error(`[room] "${type}" failed:`, (err as Error)?.message ?? err);
+        // Deliberately generic. The player cannot act on a Postgres error code,
+        // and echoing internals back to a client is how internals leak.
+        try {
+          client.send("actionFailed", { type, reason: "Something went wrong. Try again." });
+        } catch {
+          /* the client is already gone; nothing to tell */
+        }
+      }
+    });
+  }
+
   async onAuth(client: Client, options?: { deviceId?: string; privyToken?: string }) {
     if (!REQUIRE_AUTH) return true;
 
@@ -180,7 +210,7 @@ export class CityRoom extends Room<CityState> {
       console.error("[room] restoreWorld failed:", err?.message ?? err)
     );
 
-    this.onMessage("input", (client, cmd: InputCommand) => {
+    this.onMessageSafe("input", (client, cmd: InputCommand) => {
       if (!cmd || typeof cmd.seq !== "number") return;
       const queue = this.queues.get(client.sessionId);
       if (!queue) return;
@@ -188,7 +218,7 @@ export class CityRoom extends Room<CityState> {
       if (queue.length < 120) queue.push(cmd);
     });
 
-    this.onMessage("setName", (client, name: string) => {
+    this.onMessageSafe("setName", (client, name: string) => {
       const player = this.state.players.get(client.sessionId);
       if (player && typeof name === "string") {
         player.name = name.slice(0, 16).replace(/[^\w \-]/g, "") || player.name;
@@ -200,7 +230,7 @@ export class CityRoom extends Room<CityState> {
      * is told what happened. Each owned floor becomes a lit window visible to
      * the whole city.
      */
-    this.onMessage("buyFloor", (client, symbol: string) => {
+    this.onMessageSafe("buyFloor", (client, symbol: string) => {
       const player = this.state.players.get(client.sessionId);
       if (!player || typeof symbol !== "string") return;
 
@@ -224,7 +254,7 @@ export class CityRoom extends Room<CityState> {
      * Proximity and district chat. Validation, rate limiting and sanitising all
      * happen in ChatService before anything reaches another player's screen.
      */
-    this.onMessage("chat", (client, raw: unknown) => {
+    this.onMessageSafe("chat", (client, raw: unknown) => {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
 
@@ -261,7 +291,7 @@ export class CityRoom extends Room<CityState> {
      * server-side keeps the mapping private while still allowing a DM to reach
      * somebody who has since gone offline.
      */
-    this.onMessage(
+    this.onMessageSafe(
       "dmSend",
       async (client, msg: { to?: string; handle?: string; text?: string }) => {
         const fromDevice = this.devices.get(client.sessionId);
@@ -325,11 +355,11 @@ export class CityRoom extends Room<CityState> {
       }
     );
 
-    this.onMessage("dmThreads", async (client) => {
+    this.onMessageSafe("dmThreads", async (client) => {
       await this.pushInbox(client);
     });
 
-    this.onMessage("dmThread", async (client, handle: string) => {
+    this.onMessageSafe("dmThread", async (client, handle: string) => {
       const device = this.devices.get(client.sessionId);
       if (!device || typeof handle !== "string") return;
       // The handle only resolves for someone this player has already messaged,
@@ -341,7 +371,7 @@ export class CityRoom extends Room<CityState> {
       await this.pushInbox(client);
     });
 
-    this.onMessage("dmBlock", async (client, msg: { device?: string; block?: boolean }) => {
+    this.onMessageSafe("dmBlock", async (client, msg: { device?: string; block?: boolean }) => {
       const device = this.devices.get(client.sessionId);
       if (!device || !msg?.device) return;
       const other = await this.messages.resolveHandle(device, msg.device);
@@ -352,7 +382,7 @@ export class CityRoom extends Room<CityState> {
     });
 
     // ---- crews -------------------------------------------------------------
-    this.onMessage(
+    this.onMessageSafe(
       "crewCreate",
       async (client, msg: { name?: string; tag?: string; color?: string }) => {
         const deviceId = this.devices.get(client.sessionId);
@@ -391,7 +421,7 @@ export class CityRoom extends Room<CityState> {
       }
     );
 
-    this.onMessage("crewJoin", async (client, tag: string) => {
+    this.onMessageSafe("crewJoin", async (client, tag: string) => {
       const deviceId = this.devices.get(client.sessionId);
       if (!deviceId || typeof tag !== "string") return;
       // Same race as crewCreate: queue this player before flushing.
@@ -406,7 +436,7 @@ export class CityRoom extends Room<CityState> {
       }
     });
 
-    this.onMessage("crewLeave", async (client) => {
+    this.onMessageSafe("crewLeave", async (client) => {
       const deviceId = this.devices.get(client.sessionId);
       if (!deviceId) return;
       const result = await this.crews.leave(deviceId);
@@ -418,7 +448,7 @@ export class CityRoom extends Room<CityState> {
     });
 
     // ---- floor market ------------------------------------------------------
-    this.onMessage("listFloor", async (client, msg: { symbol?: string; price?: number }) => {
+    this.onMessageSafe("listFloor", async (client, msg: { symbol?: string; price?: number }) => {
       const deviceId = this.devices.get(client.sessionId);
       if (!deviceId || !msg) return;
       // The seller's current floors must be on disk before we check ownership.
@@ -428,7 +458,7 @@ export class CityRoom extends Room<CityState> {
       if (result.ok) await this.publishMarket();
     });
 
-    this.onMessage("cancelListing", async (client, id: number) => {
+    this.onMessageSafe("cancelListing", async (client, id: number) => {
       const deviceId = this.devices.get(client.sessionId);
       if (!deviceId || typeof id !== "number") return;
       const result = await this.market.cancel(deviceId, id);
@@ -436,7 +466,7 @@ export class CityRoom extends Room<CityState> {
       if (result.ok) await this.publishMarket();
     });
 
-    this.onMessage("buyListing", async (client, id: number) => {
+    this.onMessageSafe("buyListing", async (client, id: number) => {
       const deviceId = this.devices.get(client.sessionId);
       const player = this.state.players.get(client.sessionId);
       if (!deviceId || !player || typeof id !== "number") return;
@@ -460,21 +490,36 @@ export class CityRoom extends Room<CityState> {
          * paid for a floor that now exists twice.
          */
         /**
-         * Apply the balances the transaction itself produced.
+         * Move both balances by the price.
          *
-         * Re-reading them is a second round trip, and the periodic flusher can
-         * fire inside it and write a stale in-memory balance over the settled
-         * trade — which is exactly what happened once accrual began marking
-         * players dirty every five seconds instead of every thirty. Floors still
-         * need a reload; the balance does not.
+         * Not to the figures the transaction computed. Those are correct at the
+         * instant the transaction ran and stale by the time they get here if
+         * accrual credited anything in between, and assigning them would drop
+         * that credit from the balance while leaving its ledger row in place.
+         * Floors still need a reload; the balance only needs the delta.
          */
-        this.applyBalance(deviceId, result.buyerBlock);
-        if (result.sellerDevice) this.applyBalance(result.sellerDevice, result.sellerBlock);
+        this.adjustBalance(deviceId, -result.price);
+        if (result.sellerDevice) this.adjustBalance(result.sellerDevice, result.price);
 
-        await this.reloadPlayer(deviceId, { keepBalance: true });
-        if (result.sellerDevice) {
-          await this.reloadPlayer(result.sellerDevice, { keepBalance: true });
-        }
+        /**
+         * Move the floor the same way, and for the same reason.
+         *
+         * This used to reload both players' floors from the database, which is
+         * only safe if the database is right at the moment it is read. It is not
+         * guaranteed to be: the accrual loop persists whatever floors are in
+         * memory every few seconds, so a tick landing between the transaction
+         * and the reload can queue the seller's pre-trade counts, and a flush
+         * behind it writes them over the settled transfer. The reload then reads
+         * that back and persists it, making the corruption permanent — the
+         * seller keeps the floor they sold and the buyer keeps the one they
+         * bought.
+         *
+         * A delta cannot read a poisoned value because it does not read at all.
+         * The transaction already settled the database; this only moves the
+         * in-memory copy by the same one floor.
+         */
+        this.adjustFloors(deviceId, result.symbol, 1);
+        if (result.sellerDevice) this.adjustFloors(result.sellerDevice, result.symbol, -1);
 
         /**
          * Deliberately NOT flushing here.
@@ -491,7 +536,7 @@ export class CityRoom extends Room<CityState> {
       }
     });
 
-    this.onMessage("emote", (client, name: unknown) => {
+    this.onMessageSafe("emote", (client, name: unknown) => {
       const player = this.state.players.get(client.sessionId);
       if (!player || !isEmote(name)) return;
       player.emote = name;
@@ -500,7 +545,7 @@ export class CityRoom extends Room<CityState> {
 
     // ---- wallet sign-in ---------------------------------------------------
     /** Hand out a single-use nonce for the wallet to sign. */
-    this.onMessage("walletChallenge", (client) => {
+    this.onMessageSafe("walletChallenge", (client) => {
       client.send("walletChallengeResult", { nonce: this.auth.challenge(client.sessionId) });
     });
 
@@ -518,7 +563,7 @@ export class CityRoom extends Room<CityState> {
      * your account. The account decides who you are; the wallet only says what
      * you hold.
      */
-    this.onMessage(
+    this.onMessageSafe(
       "walletVerify",
       async (client, msg: { address: string; message: string; signature: string }) => {
         const player = this.state.players.get(client.sessionId);
@@ -566,7 +611,7 @@ export class CityRoom extends Room<CityState> {
     );
 
     // ---- shift work -------------------------------------------------------
-    this.onMessage("shiftStart", (client, symbol: string) => {
+    this.onMessageSafe("shiftStart", (client, symbol: string) => {
       const player = this.state.players.get(client.sessionId);
       const deviceId = this.devices.get(client.sessionId);
       if (!player || !deviceId || typeof symbol !== "string") return;
@@ -576,7 +621,7 @@ export class CityRoom extends Room<CityState> {
       );
     });
 
-    this.onMessage(
+    this.onMessageSafe(
       "shiftFinish",
       (client, msg: { shiftId: string; presses: number[] }) => {
         const player = this.state.players.get(client.sessionId);
@@ -604,7 +649,7 @@ export class CityRoom extends Room<CityState> {
     );
 
     // ---- neon signs -------------------------------------------------------
-    this.onMessage(
+    this.onMessageSafe(
       "placeSign",
       (client, msg: { symbol: string; text: string; color: string }) => {
         const player = this.state.players.get(client.sessionId);
@@ -963,7 +1008,26 @@ export class CityRoom extends Room<CityState> {
    * no memory state to correct, and will load the settled values on next join.
    */
   /** Set a connected player's balance and re-queue it, replacing any stale row. */
-  private applyBalance(deviceId: string, block: number) {
+  /**
+   * Move a player's in-memory balance by a delta, not to an absolute value.
+   *
+   * This used to assign the balance the settling transaction computed, which
+   * looked safer than re-reading it and was in fact a way to lose money.
+   *
+   * The transaction reads a balance, adds the trade, and writes it back. Between
+   * that read and this assignment the accrual loop can credit floor yield: it
+   * adds to the in-memory balance and queues a ledger row. Assigning the
+   * transaction's figure then discards the credit from the balance while the
+   * ledger row survives, so the books stop balancing and /audit reports drift of
+   * exactly one yield tick. That is what it was reporting.
+   *
+   * A delta commutes with concurrent credits, so it does not care what else
+   * happened in the meantime. The database already holds the settled figure; all
+   * this has to do is move the in-memory copy by the same amount.
+   */
+  private adjustBalance(deviceId: string, delta: number) {
+    if (!isFinite(delta) || delta === 0) return;
+
     let sessionId = "";
     this.devices.forEach((device, session) => {
       if (device === deviceId) sessionId = session;
@@ -971,41 +1035,36 @@ export class CityRoom extends Room<CityState> {
     if (!sessionId) return;
     const player = this.state.players.get(sessionId);
     if (!player) return;
-    player.block = block;
+
+    player.block += delta;
     // Overwrites the queued entry for this device, which is keyed by device id.
     this.persist(sessionId);
   }
 
-  private async reloadPlayer(deviceId: string, opts: { keepBalance?: boolean } = {}) {
+  /**
+   * Move one player's floor count in a tower, in memory.
+   *
+   * Offline players are skipped on purpose: they have no in-memory state to
+   * correct, and the transaction has already written their true counts. They
+   * pick them up from the database when they next join.
+   */
+  private adjustFloors(deviceId: string, symbol: string, delta: number) {
     let sessionId = "";
     this.devices.forEach((device, session) => {
       if (device === deviceId) sessionId = session;
     });
     if (!sessionId) return;
-
     const player = this.state.players.get(sessionId);
     if (!player) return;
 
-    const saved = await this.store.loadPlayer(deviceId);
-    if (!saved) return;
+    const next = (player.floors.get(symbol) ?? 0) + delta;
+    if (next > 0) player.floors.set(symbol, next);
+    else player.floors.delete(symbol);
 
-    if (!opts.keepBalance) player.block = saved.block;
-    player.floors.clear();
-    for (const [symbol, count] of Object.entries(saved.floors)) {
-      if (count > 0) player.floors.set(symbol, count);
-    }
-
-    /**
-     * Re-queue AFTER the floors are correct.
-     *
-     * `persist` snapshots `player.floors` as it stands, so anything queued
-     * before this reload holds the pre-trade counts. Left there, the next flush
-     * writes them back over the settled transfer — handing the seller their
-     * floor back while the buyer keeps theirs. Queuing again replaces that entry
-     * with the true state.
-     */
+    // Replaces this device's queued floor map with the corrected one.
     this.persist(sessionId);
   }
+
 
   /** Mirror open listings into replicated state. */
   private async publishMarket() {

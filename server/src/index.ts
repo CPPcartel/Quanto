@@ -138,6 +138,105 @@ app.get("/leaderboard", (req, res) => {
  * Any drift means a balance changed without being recorded, which is the one
  * bug class the ledger exists to make impossible.
  */
+/**
+ * Past seasons, and whether each one has been closed.
+ *
+ * `closed_at` is deliberately separate from `ends_at`: one is when the season
+ * was scheduled to end, the other when the server actually froze it. If the
+ * process was down over a boundary the two differ, and that difference is
+ * exactly what somebody disputing a result needs to see.
+ */
+app.get("/seasons", async (_req, res) => {
+  if (!db) {
+    res.status(503).json({ ok: false, error: "not ready" });
+    return;
+  }
+  try {
+    if (!boards) {
+      res.status(503).json({ ok: false, error: "not ready" });
+      return;
+    }
+    const rows = await db.query<{
+      id: string | number;
+      label: string;
+      starts_at: string;
+      ends_at: string;
+      closed_at: string | null;
+    }>(
+      `SELECT id, label, starts_at, ends_at, closed_at
+         FROM seasons ORDER BY id DESC LIMIT 100`
+    );
+    res.json({
+      ok: true,
+      current: boards.currentSeason,
+      seasons: rows.map((r) => ({
+        id: Number(r.id),
+        label: r.label,
+        startsAt: r.starts_at,
+        endsAt: r.ends_at,
+        closedAt: r.closed_at,
+        closed: r.closed_at !== null,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
+  }
+});
+
+/**
+ * The frozen final standings for one season.
+ *
+ * Public and permanent. A competition result nobody can check independently is a
+ * result nobody has any reason to trust, and this sits beside /audit for the
+ * same reason: publishing the check is worth more than asserting the outcome.
+ *
+ * Returns nothing while a season is still open. "Who is winning" is the live
+ * board's job; this endpoint only ever answers "who won".
+ */
+app.get("/season/:id/results", async (req, res) => {
+  if (!db) {
+    res.status(503).json({ ok: false, error: "not ready" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ ok: false, error: "bad season id" });
+    return;
+  }
+
+  try {
+    const seasons = await db.query<{ label: string; ends_at: string; closed_at: string | null }>(
+      "SELECT label, ends_at, closed_at FROM seasons WHERE id = $1",
+      [id]
+    );
+    const season = seasons[0];
+    if (!season) {
+      res.status(404).json({ ok: false, error: "no such season" });
+      return;
+    }
+
+    const board = typeof req.query.board === "string" ? req.query.board : undefined;
+    const results = await boards.resultsFor(id, board as never);
+
+    res.json({
+      ok: true,
+      season: {
+        id,
+        label: season.label,
+        endsAt: season.ends_at,
+        closedAt: season.closed_at,
+        closed: season.closed_at !== null,
+      },
+      // Empty rather than an error while a season is open: "not finished yet" is
+      // an answer, and a 404 would imply the season does not exist.
+      results,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
+  }
+});
+
 app.get("/audit", async (_req, res) => {
   if (!db) {
     res.status(503).json({ ok: false, error: "not ready" });

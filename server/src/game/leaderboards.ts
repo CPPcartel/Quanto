@@ -106,6 +106,31 @@ const QUERIES: Record<BoardId, string> = {
   `,
 };
 
+/**
+ * Turn query rows into ranked board rows.
+ *
+ * Shared by the live refresh and the season freeze on purpose. These two must
+ * agree exactly: if the frozen standings were ranked or labelled even slightly
+ * differently from the board people watched all week, the results would
+ * contradict the thing everyone had been looking at.
+ */
+function rank(board: BoardId, rows: RawRow[]): BoardRow[] {
+  return rows.map((r, i) => ({
+    rank: i + 1,
+    name: r.name || "Trader",
+    wallet: r.wallet,
+    score: Number(r.score),
+    detail:
+      board === "floors"
+        ? `${r.towers} tower${r.towers === 1 ? "" : "s"}`
+        : board === "season_earned"
+          ? `${r.towers} floor${r.towers === 1 ? "" : "s"} bought`
+          : board === "crews"
+            ? `${r.towers} member${r.towers === 1 ? "" : "s"}`
+            : "",
+  }));
+}
+
 interface RawRow {
   id: string | number;
   name: string;
@@ -150,14 +175,125 @@ export class Leaderboards {
     return this.cache.get(board) ?? [];
   }
 
-  /** Open a new season if the current one has ended. */
+  /**
+   * Open a new season if the current one has ended, freezing the old one first.
+   *
+   * The order is the whole point. This used to adopt the new season and then let
+   * the caller recompute the boards, which meant the outgoing season's final
+   * standings were never computed at all — the most recent rolling snapshot,
+   * taken up to a refresh interval earlier, was as close as anyone got. A player
+   * who took the lead in the last thirty seconds of a season simply did not
+   * appear to have won it.
+   *
+   * That was survivable while the standings were bragging rights. It is not
+   * survivable once they decide a prize, so the freeze happens here rather than
+   * in `refresh`: any caller that rolls a season gets correct results, whether
+   * or not it remembers to ask for them.
+   */
   async rollSeason() {
     const season = await ensureSeason(this.db);
-    const changed = season.id !== this.seasonId;
-    this.seasonId = Number(season.id);
+    const nextId = Number(season.id);
+    const previousId = this.seasonId;
+
+    // previousId 0 is a cold start, not a rollover: there is no outgoing season
+    // to freeze, and the one we are adopting may have been running for days.
+    if (previousId !== 0 && nextId !== previousId) {
+      await this.freezeSeason(previousId).catch((err) =>
+        // Deliberately non-fatal. Failing to freeze must not wedge the season
+        // roll and take the live boards down with it; the results are
+        // recoverable from season_stats, the running game is not.
+        console.error("[leaderboards] freeze failed:", (err as Error)?.message ?? err)
+      );
+    }
+
+    this.seasonId = nextId;
     this.seasonLabel = season.label;
-    if (changed) console.log(`[leaderboards] season: ${this.seasonLabel} (#${this.seasonId})`);
+    if (nextId !== previousId) {
+      console.log(`[leaderboards] season: ${this.seasonLabel} (#${this.seasonId})`);
+    }
     return this.seasonId;
+  }
+
+  /**
+   * Write the closing standings for a season, once and permanently.
+   *
+   * Computed against the outgoing season id, so it reflects every point earned
+   * right up to the boundary rather than up to the last refresh.
+   *
+   * Inserts ignore conflicts. A crash between writing the rows and stamping
+   * `closed_at` leaves the next boot retrying, and the retry must not be able
+   * to rewrite a result somebody has already been paid on.
+   */
+  private async freezeSeason(seasonId: number) {
+    for (const board of BOARDS) {
+      if (!board.seasonal) continue;
+
+      const rows = await this.db.query<RawRow>(QUERIES[board.id], [TOP_N, seasonId]);
+      const ranked = rank(board.id, rows);
+
+      for (let i = 0; i < ranked.length; i++) {
+        const row = ranked[i];
+        await this.db.query(
+          `INSERT INTO season_results
+             (season_id, board, rank, player_id, name, wallet, score, detail)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+           ON CONFLICT (season_id, board, rank) DO NOTHING`,
+          [
+            seasonId,
+            board.id,
+            row.rank,
+            Number(rows[i].id),
+            row.name,
+            row.wallet,
+            row.score,
+            row.detail,
+          ]
+        );
+      }
+    }
+
+    // Only stamped once, for the same reason the rows are only inserted once.
+    await this.db.query(
+      "UPDATE seasons SET closed_at = now() WHERE id = $1 AND closed_at IS NULL",
+      [seasonId]
+    );
+
+    console.log(`[leaderboards] froze final standings for season #${seasonId}`);
+  }
+
+  /** The frozen standings for a closed season. Empty while a season is open. */
+  async resultsFor(seasonId: number, board?: BoardId) {
+    const rows = await this.db.query<{
+      board: string;
+      rank: number;
+      name: string;
+      wallet: string | null;
+      score: number;
+      detail: string;
+      frozen_at: string;
+    }>(
+      board
+        ? `SELECT board, rank, name, wallet, score::float8 AS score, detail, frozen_at
+             FROM season_results WHERE season_id = $1 AND board = $2 ORDER BY rank`
+        : `SELECT board, rank, name, wallet, score::float8 AS score, detail, frozen_at
+             FROM season_results WHERE season_id = $1 ORDER BY board, rank`,
+      board ? [seasonId, board] : [seasonId]
+    );
+
+    /**
+     * player_id is deliberately not selected. Nothing identifying beyond the
+     * display name and the wallet the player already chose to show may leave
+     * the server on a public route.
+     */
+    return rows.map((r) => ({
+      board: r.board,
+      rank: Number(r.rank),
+      name: r.name,
+      wallet: r.wallet,
+      score: Number(r.score),
+      detail: r.detail,
+      frozenAt: r.frozen_at,
+    }));
   }
 
   async refresh() {
@@ -171,20 +307,7 @@ export class Leaderboards {
         const params: unknown[] = board.seasonal ? [TOP_N, this.seasonId] : [TOP_N];
         const rows = await this.db.query<RawRow>(QUERIES[board.id], params);
 
-        const ranked: BoardRow[] = rows.map((r, i) => ({
-          rank: i + 1,
-          name: r.name || "Trader",
-          wallet: r.wallet,
-          score: Number(r.score),
-          detail:
-            board.id === "floors"
-              ? `${r.towers} tower${r.towers === 1 ? "" : "s"}`
-              : board.id === "season_earned"
-                ? `${r.towers} floor${r.towers === 1 ? "" : "s"} bought`
-                : board.id === "crews"
-                  ? `${r.towers} member${r.towers === 1 ? "" : "s"}`
-                  : "",
-        }));
+        const ranked = rank(board.id, rows);
 
         this.cache.set(board.id, ranked);
         await this.persist(board.id, board.seasonal ? this.seasonId : null, rows, ranked);
