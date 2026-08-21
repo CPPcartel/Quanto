@@ -1,4 +1,5 @@
 import express from "express";
+import { timingSafeEqual } from "node:crypto";
 import { createServer } from "http";
 import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
@@ -232,6 +233,244 @@ app.get("/season/:id/results", async (req, res) => {
       // an answer, and a 404 would imply the season does not exist.
       results,
     });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
+  }
+});
+
+/**
+ * Admin routes are gated on a shared secret, and fail CLOSED.
+ *
+ * With ADMIN_TOKEN unset these routes refuse every request rather than falling
+ * open. An unset secret is a misconfiguration, and the failure mode of guessing
+ * otherwise is that the review data for a paid competition — account ages, login
+ * methods, session counts — is served to anybody who finds the URL.
+ *
+ * Compared with timingSafeEqual so the comparison cannot be used as an oracle.
+ */
+function adminOk(req: express.Request): boolean {
+  const expected = process.env.ADMIN_TOKEN ?? "";
+  if (!expected) return false;
+
+  const header = req.get("authorization") ?? "";
+  const supplied = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!supplied) return false;
+
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(expected);
+  // Different lengths cannot be compared by timingSafeEqual and are never equal.
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function requireAdmin(req: express.Request, res: express.Response): boolean {
+  if (adminOk(req)) return true;
+  res.status(process.env.ADMIN_TOKEN ? 401 : 503).json({
+    ok: false,
+    error: process.env.ADMIN_TOKEN
+      ? "unauthorised"
+      : "ADMIN_TOKEN is not configured on this server",
+  });
+  return false;
+}
+
+/**
+ * Everything needed to review a season's winners before paying them.
+ *
+ * Deliberately a report for a human rather than an automated verdict. Nobody
+ * knows yet what cheating looks like in this game, and an automatic ban system
+ * built before the first season would be wrong in both directions — refusing
+ * real winners and passing whatever it was not designed to catch.
+ *
+ * The signals are the ones that separate a player from a farm: how long the
+ * account has existed, how many separate sessions it played, how its earnings
+ * break down by kind, and how fast they arrived. A single session that earned a
+ * season's winnings in an hour is not necessarily cheating, but it is the row a
+ * person should look at first.
+ */
+app.get("/admin/season/:id/review", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  if (!db) {
+    res.status(503).json({ ok: false, error: "not ready" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ ok: false, error: "bad season id" });
+    return;
+  }
+
+  const board = typeof req.query.board === "string" ? req.query.board : "season_earned";
+  const limit = Math.min(Number(req.query.limit ?? 10) || 10, 50);
+
+  try {
+    const rows = await db.query<{
+      rank: number;
+      name: string;
+      score: number;
+      player_id: string | number | null;
+      paid_at: string | null;
+      payout_tx: string | null;
+      device_id: string | null;
+      created_at: string | null;
+      last_seen_at: string | null;
+      login_method: string | null;
+      is_guest: boolean | null;
+      email: string | null;
+      logins: number;
+      wallets: number;
+    }>(
+      `SELECT r.rank, r.name, r.score::float8 AS score, r.player_id,
+              r.paid_at, r.payout_tx,
+              p.device_id, p.created_at, p.last_seen_at, p.login_method,
+              p.is_guest, p.email,
+              (SELECT COUNT(*)::int FROM logins l WHERE l.player_id = p.id) AS logins,
+              (SELECT COUNT(*)::int FROM player_wallets w WHERE w.player_id = p.id) AS wallets
+         FROM season_results r
+         LEFT JOIN players p ON p.id = r.player_id
+        WHERE r.season_id = $1 AND r.board = $2
+        ORDER BY r.rank
+        LIMIT $3`,
+      [id, board, limit]
+    );
+
+    const season = await db.query<{ starts_at: string; ends_at: string; closed_at: string | null }>(
+      "SELECT starts_at, ends_at, closed_at FROM seasons WHERE id = $1",
+      [id]
+    );
+    if (!season[0]) {
+      res.status(404).json({ ok: false, error: "no such season" });
+      return;
+    }
+
+    // Earnings by ledger kind, so a score can be read rather than trusted.
+    const entrants = rows.map((r) => Number(r.player_id)).filter((n) => Number.isFinite(n));
+    const byKind = new Map<number, Record<string, number>>();
+    if (entrants.length) {
+      const kinds = await db.query<{ player_id: string | number; kind: string; total: number }>(
+        `SELECT player_id, kind, SUM(amount)::float8 AS total
+           FROM ledger
+          WHERE player_id = ANY($1::bigint[])
+            AND amount > 0
+            AND created_at >= $2 AND created_at < $3
+          GROUP BY player_id, kind`,
+        [entrants, season[0].starts_at, season[0].closed_at ?? season[0].ends_at]
+      );
+      for (const k of kinds) {
+        const pid = Number(k.player_id);
+        const bucket = byKind.get(pid) ?? {};
+        bucket[k.kind] = Number(k.total);
+        byKind.set(pid, bucket);
+      }
+    }
+
+    res.json({
+      ok: true,
+      season: { id, board, startsAt: season[0].starts_at, closedAt: season[0].closed_at },
+      /**
+       * device_id IS included here, unlike every public route. This endpoint is
+       * for the operator deciding who to pay, and a device id is the only handle
+       * that ties a result back to a save. It must never appear on a public
+       * route — see the messaging layer, where the same rule applies.
+       */
+      entrants: rows.map((r) => {
+        const pid = Number(r.player_id);
+        const created = r.created_at ? new Date(r.created_at).getTime() : null;
+        const ageHours = created ? (Date.now() - created) / 3_600_000 : null;
+        return {
+          rank: Number(r.rank),
+          name: r.name,
+          score: Number(r.score),
+          paid: r.paid_at !== null,
+          payoutTx: r.payout_tx,
+          deviceId: r.device_id,
+          accountAgeHours: ageHours === null ? null : Math.round(ageHours * 10) / 10,
+          createdAt: r.created_at,
+          lastSeenAt: r.last_seen_at,
+          loginMethod: r.login_method,
+          isGuest: r.is_guest,
+          hasEmail: Boolean(r.email),
+          logins: Number(r.logins),
+          linkedWallets: Number(r.wallets),
+          // The single most useful number on the page: score per hour of
+          // account existence. A farm sits at the top of this column.
+          scorePerHour:
+            ageHours && ageHours > 0 ? Math.round((Number(r.score) / ageHours) * 100) / 100 : null,
+          earningsByKind: byKind.get(pid) ?? {},
+        };
+      }),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
+  }
+});
+
+/**
+ * Record that a prize was paid.
+ *
+ * Writes only where paid_at IS NULL, which makes it idempotent: asking twice
+ * reports the transaction already on file rather than replacing it. That guard
+ * is the entire point of the route. Prize disputes are resolved by somebody
+ * looking for proof of payment, and if the record can be overwritten there is no
+ * proof — just the most recent claim.
+ *
+ * Deliberately does NOT send anything. Moving funds from a treasury is a
+ * deliberate human act; this only records that it happened.
+ */
+app.post("/admin/season/:id/payout", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  if (!db) {
+    res.status(503).json({ ok: false, error: "not ready" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const body = (req.body ?? {}) as {
+    board?: string;
+    rank?: number;
+    tx?: string;
+    to?: string;
+    note?: string;
+  };
+  const board = String(body.board ?? "");
+  const rank = Number(body.rank);
+  const tx = String(body.tx ?? "").trim();
+
+  if (!Number.isInteger(id) || id <= 0 || !board || !Number.isInteger(rank) || rank <= 0 || !tx) {
+    res.status(400).json({ ok: false, error: "need season id, board, rank and tx" });
+    return;
+  }
+
+  try {
+    const existing = await db.query<{ paid_at: string | null; payout_tx: string | null; name: string }>(
+      "SELECT paid_at, payout_tx, name FROM season_results WHERE season_id = $1 AND board = $2 AND rank = $3",
+      [id, board, rank]
+    );
+    if (!existing[0]) {
+      res.status(404).json({ ok: false, error: "no such result" });
+      return;
+    }
+    if (existing[0].paid_at) {
+      // Not an error. The caller asked whether this is settled, and it is.
+      res.status(409).json({
+        ok: false,
+        error: "already paid",
+        paidAt: existing[0].paid_at,
+        payoutTx: existing[0].payout_tx,
+        name: existing[0].name,
+      });
+      return;
+    }
+
+    await db.query(
+      `UPDATE season_results
+          SET paid_at = now(), payout_tx = $4, payout_to = $5, payout_note = $6
+        WHERE season_id = $1 AND board = $2 AND rank = $3 AND paid_at IS NULL`,
+      [id, board, rank, tx, body.to ?? null, body.note ?? null]
+    );
+
+    console.log(`[prize] season #${id} ${board} rank ${rank} marked paid — ${tx}`);
+    res.json({ ok: true, season: id, board, rank, tx });
   } catch (err) {
     res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
   }

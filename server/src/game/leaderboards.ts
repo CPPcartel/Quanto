@@ -195,16 +195,30 @@ export class Leaderboards {
     const nextId = Number(season.id);
     const previousId = this.seasonId;
 
-    // previousId 0 is a cold start, not a rollover: there is no outgoing season
-    // to freeze, and the one we are adopting may have been running for days.
-    if (previousId !== 0 && nextId !== previousId) {
-      await this.freezeSeason(previousId).catch((err) =>
-        // Deliberately non-fatal. Failing to freeze must not wedge the season
-        // roll and take the live boards down with it; the results are
-        // recoverable from season_stats, the running game is not.
-        console.error("[leaderboards] freeze failed:", (err as Error)?.message ?? err)
-      );
-    }
+
+    /**
+     * Freeze anything that has ended and was never closed, not just the season
+     * this process happened to be holding.
+     *
+     * The first version keyed off the in-memory previous id and skipped the
+     * freeze on a cold start, on the grounds that there was no outgoing season
+     * to close. That is wrong in the one case that matters: a season that ends
+     * while the server is down has nobody holding it, so on the next boot it
+     * would be silently skipped and its standings lost for good. Seasons roll at
+     * Monday 00:00 UTC, which is exactly the sort of hour a deploy or a restart
+     * lands on.
+     *
+     * Asking the database which seasons are unclosed removes the assumption
+     * entirely. It covers the ordinary rollover, a boundary crossed during
+     * downtime, and a previous freeze that failed part-way — that last one
+     * retries here, and the insert conflict makes the retry harmless.
+     */
+    await this.freezeEndedSeasons(nextId).catch((err) =>
+      // Deliberately non-fatal. Failing to freeze must not wedge the season roll
+      // and take the live boards down with it; the standings are recoverable
+      // from season_stats, the running game is not.
+      console.error("[leaderboards] freeze failed:", (err as Error)?.message ?? err)
+    );
 
     this.seasonId = nextId;
     this.seasonLabel = season.label;
@@ -212,6 +226,26 @@ export class Leaderboards {
       console.log(`[leaderboards] season: ${this.seasonLabel} (#${this.seasonId})`);
     }
     return this.seasonId;
+  }
+
+  /**
+   * Close every season that has ended and has no closed_at, oldest first.
+   *
+   * Excludes the season now current: `ensureSeason` only ever returns one whose
+   * window contains now, so it has not ended, but the guard makes that explicit
+   * rather than relying on it.
+   */
+  private async freezeEndedSeasons(currentId: number) {
+    const stale = await this.db.query<{ id: string | number }>(
+      `SELECT id FROM seasons
+        WHERE closed_at IS NULL AND ends_at <= now() AND id <> $1
+        ORDER BY id`,
+      [currentId]
+    );
+
+    for (const row of stale) {
+      await this.freezeSeason(Number(row.id));
+    }
   }
 
   /**
@@ -271,11 +305,15 @@ export class Leaderboards {
       score: number;
       detail: string;
       frozen_at: string;
+      paid_at: string | null;
+      payout_tx: string | null;
     }>(
       board
-        ? `SELECT board, rank, name, wallet, score::float8 AS score, detail, frozen_at
+        ? `SELECT board, rank, name, wallet, score::float8 AS score, detail, frozen_at,
+                  paid_at, payout_tx
              FROM season_results WHERE season_id = $1 AND board = $2 ORDER BY rank`
-        : `SELECT board, rank, name, wallet, score::float8 AS score, detail, frozen_at
+        : `SELECT board, rank, name, wallet, score::float8 AS score, detail, frozen_at,
+                  paid_at, payout_tx
              FROM season_results WHERE season_id = $1 ORDER BY board, rank`,
       board ? [seasonId, board] : [seasonId]
     );
@@ -285,6 +323,15 @@ export class Leaderboards {
      * display name and the wallet the player already chose to show may leave
      * the server on a public route.
      */
+    /**
+     * Payment status is public, and the transaction hash with it.
+     *
+     * The transfer is already visible on chain; what is not visible is which
+     * result it settled. Publishing the pairing is what turns "we paid the
+     * winners" from a claim into something anyone can check, which is the same
+     * reason /audit exists. A prize nobody can verify was paid is worth less
+     * than one they can.
+     */
     return rows.map((r) => ({
       board: r.board,
       rank: Number(r.rank),
@@ -293,6 +340,9 @@ export class Leaderboards {
       score: Number(r.score),
       detail: r.detail,
       frozenAt: r.frozen_at,
+      paid: r.paid_at !== null,
+      paidAt: r.paid_at,
+      payoutTx: r.payout_tx,
     }));
   }
 

@@ -44,3 +44,7 @@ contracts/typechain-types/
 promo/capture/
 promo/out/
 promo/public/footage/
+
+# Operator secret for the /admin routes. Written by the deploy step so the
+# token can be retrieved locally; it must never reach the repository.
+.admin-token

@@ -17,7 +17,9 @@
     "repair:balances": "node scripts/repair-balances.mjs",
     "db:purge-test": "node scripts/purge-test-data.mjs",
     "test:wallets": "npm run build && node scripts/test-wallets.mjs",
-    "test:seasons": "npm run build && node scripts/test-seasons.mjs"
+    "test:seasons": "npm run build && node scripts/test-seasons.mjs",
+    "test:prizes": "node scripts/test-prizes.mjs",
+    "seed:season": "node scripts/seed-closed-season.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.16.25",

@@ -509,6 +509,37 @@ const MIGRATIONS: Migration[] = [
     `,
   },
 
+  {
+    id: "012_season_payouts",
+    sql: `
+      /*
+        Payment, recorded against the result it paid.
+
+        A prize competition has two halves that must both be auditable: who won,
+        and whether they were actually paid. Frozen standings answer the first.
+        Without these columns the second lives in somebody's inbox, which is
+        where double payments come from — a winner asks again, nobody can prove
+        it was already settled, and the safe-looking answer is to pay.
+
+        paid_at is the guard rather than a bookkeeping nicety. The route that
+        records a payout only writes where paid_at IS NULL, so marking a result
+        paid is idempotent and a second attempt reports the existing transaction
+        instead of overwriting it.
+
+        payout_tx is public on purpose. The chain already shows the transfer;
+        publishing which result it settled is what lets anyone check the prize
+        was paid to the player the frozen standings named.
+      */
+      ALTER TABLE season_results ADD COLUMN IF NOT EXISTS paid_at   timestamptz;
+      ALTER TABLE season_results ADD COLUMN IF NOT EXISTS payout_tx text;
+      ALTER TABLE season_results ADD COLUMN IF NOT EXISTS payout_to text;
+      ALTER TABLE season_results ADD COLUMN IF NOT EXISTS payout_note text;
+
+      CREATE INDEX IF NOT EXISTS idx_season_results_unpaid
+        ON season_results(season_id, board) WHERE paid_at IS NULL;
+    `,
+  },
+
 ];
 
 /**

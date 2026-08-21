@@ -151,5 +151,57 @@ const after = await db.query(
 );
 check("a shift counts", Number(after[0]?.earned) === 40, String(after[0]?.earned));
 
+console.log("\n[9] a season that ended while the server was down still closes");
+/**
+ * Seasons roll at Monday 00:00 UTC, which is exactly the sort of hour a deploy
+ * or a restart lands on.
+ *
+ * The first version of the freeze keyed off the previous season id held in
+ * memory and skipped a cold start, reasoning that a fresh process has no
+ * outgoing season to close. That loses the one case that actually matters: if
+ * the boundary passes while nothing is running, the next boot adopts a new
+ * season and the old one is never frozen at all. Its standings are gone, and
+ * they are the standings somebody was going to be paid on.
+ *
+ * A fresh Leaderboards instance here stands in for that restart.
+ */
+{
+  const dave = await addPlayer("s-dave", "Dave");
+  const erin = await addPlayer("s-erin", "Erin");
+
+  const current = await boards.rollSeason();
+  await setEarned(current, dave, 700);
+  await setEarned(current, erin, 300);
+
+  // The boundary passes with nobody holding the season.
+  await expireSeason(current);
+
+  // A brand new instance, exactly as a restarted process would have.
+  const rebooted = new Leaderboards(db);
+  const after = await rebooted.rollSeason();
+  check("the reboot opened a new season", after !== current, `#${current} -> #${after}`);
+
+  const recovered = await rebooted.resultsFor(current, "season_earned");
+  // Three, not two: Carol earned in this season back in [8]. Asserting an exact
+  // count here would be asserting the fixture rather than the freeze.
+  check("the abandoned season was frozen anyway", recovered.length >= 2, `${recovered.length} rows`);
+  check("with the right winner", recovered[0]?.name === "Dave", recovered[0]?.name);
+  check("and the right score", recovered[0]?.score === 700, String(recovered[0]?.score));
+
+  const stamped = await db.query("SELECT closed_at FROM seasons WHERE id = $1", [current]);
+  check("and stamped closed", stamped[0]?.closed_at != null);
+}
+
+console.log("\n[10] results start unpaid");
+/**
+ * Payment is recorded separately from the standings, and nothing may arrive
+ * already marked paid.
+ */
+{
+  const unpaid = await boards.resultsFor(season1, "season_earned");
+  check("nobody is paid on freeze", unpaid.every((r) => r.paid === false), JSON.stringify(unpaid.map((r) => r.paid)));
+  check("no transaction attached", unpaid.every((r) => r.payoutTx === null));
+}
+
 console.log(fails === 0 ? "\nALL SEASON CHECKS PASSED\n" : `\n${fails} FAILED\n`);
 process.exit(fails === 0 ? 0 : 1);
