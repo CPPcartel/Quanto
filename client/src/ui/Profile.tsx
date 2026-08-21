@@ -140,7 +140,7 @@ export function ProfilePanelBody() {
           <div>
             <dt>Resident since</dt>
             <dd className="mono">
-              {profile?.createdAt ? profile.createdAt.slice(0, 10) : "—"}
+              {profile?.createdAt ? profile.createdAt.slice(0, 10) : "-"}
             </dd>
           </div>
         </dl>
@@ -197,7 +197,7 @@ function NameSection({ profile }: { profile: typeof world.profile }) {
       {!editing ? (
         <>
           <div className="profile-name-row">
-            <span className="profile-name">{world.localName || "—"}</span>
+            <span className="profile-name">{world.localName || "-"}</span>
             <button
               className="ghost-btn"
               disabled={locked}

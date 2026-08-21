@@ -160,7 +160,7 @@ export function MarketPanelBody({ onClose }: { onClose: () => void }) {
                   <option value="">select…</option>
                   {sellable.map((t) => (
                     <option key={t.symbol} value={t.symbol}>
-                      {t.symbol} — you hold {t.myFloors}
+                      {t.symbol}. You hold {t.myFloors}
                     </option>
                   ))}
                 </select>

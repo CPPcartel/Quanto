@@ -53,7 +53,7 @@ export function WalletPanel() {
             <button className="connect" onClick={() => setOpen(true)}>
               Connect wallet
             </button>
-            <p className="dim tiny">Optional — you're playing as a guest</p>
+            <p className="dim tiny">Optional. You're playing as a guest</p>
           </>
         ) : (
           <div className="connect-body">

@@ -33,7 +33,7 @@ export const SECTIONS = [
   { type: "h2", text: "1 · Thesis" },
   {
     type: "p",
-    text: "Financial markets are almost universally rendered as charts. Charts are dense, efficient, and abstract; they are read at arm's length by people who have already learned to read them. They are also, for most people, inert. A line moving on a screen conveys magnitude but not consequence, and it conveys nothing at all about the simultaneity of a market — the fact that thousands of instruments are moving at once, in relation to one another, on a shared clock.",
+    text: "Financial markets are almost universally rendered as charts. Charts are dense, efficient, and abstract; they are read at arm's length by people who have already learned to read them. They are also, for most people, inert. A line moving on a screen conveys magnitude but not consequence, and it conveys nothing at all about the simultaneity of a market. The fact that thousands of instruments are moving at once, in relation to one another, on a shared clock.",
   },
   {
     type: "p",
@@ -83,7 +83,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Quanto instead treats it as the world's day-night cycle. When the feeds freeze, the skyline freezes with them, ambient fog closes in, lighting drops, and floor yield ceases. Crypto-bonded towers, whose feeds are genuinely continuous, remain live throughout. The result is a strategic asymmetry — continuous but volatile income in one district, higher but intermittent income elsewhere — that originates in market structure rather than in a tuning parameter.",
+    text: "Quanto instead treats it as the world's day-night cycle. When the feeds freeze, the skyline freezes with them, ambient fog closes in, lighting drops, and floor yield ceases. Crypto-bonded towers, whose feeds are genuinely continuous, remain live throughout. The result is a strategic asymmetry, continuous but volatile income in one district, higher but intermittent income elsewhere. That originates in market structure rather than in a tuning parameter.",
   },
   {
     type: "p",
@@ -116,7 +116,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Storms are the only genuinely unscheduled content in the game. Nothing in the codebase decides when one occurs; the market does. This produces a live-service cadence — an unpredictable event that pulls concurrent players into one place — without a content treadmill or a live operations team.",
+    text: "Storms are the only genuinely unscheduled content in the game. Nothing in the codebase decides when one occurs; the market does. This produces a live-service cadence, an unpredictable event that pulls concurrent players into one place, without a content treadmill or a live operations team.",
   },
   { type: "h3", text: "3.4 Signage" },
   {
@@ -162,7 +162,7 @@ export const SECTIONS = [
     items: [
       "OracleRouter resolves ticker symbols to Chainlink aggregators and mediates all price reads. It enforces per-feed staleness bounds, validates that answers are positive, and consults the L2 sequencer uptime feed with a grace period, since prices observed shortly after a sequencer outage may be arbitrarily stale. It exposes both a strict reverting read and a non-reverting variant, so that game logic can distinguish a legitimately frozen equity feed from an actual fault.",
       "BlockToken is the ERC-20 currency, with issuance capped per UTC day and minting restricted to authorised controllers.",
-      "FloorDeed is the ERC-721 representing floor ownership. Token identifiers encode the ticker symbol and floor index directly, so location is derivable without a storage read and duplicate issuance of a given floor is structurally impossible — the identifier itself is the uniqueness constraint, enforced by the ERC-721 implementation.",
+      "FloorDeed is the ERC-721 representing floor ownership. Token identifiers encode the ticker symbol and floor index directly, so location is derivable without a storage read and duplicate issuance of a given floor is structurally impossible. The identifier itself is the uniqueness constraint, enforced by the ERC-721 implementation.",
       "CityController is the sole state-changing entry point, handling floor purchases and batched wage settlement, with replay protection on settlement batches.",
     ],
   },
@@ -216,11 +216,11 @@ export const SECTIONS = [
   { type: "h3", text: "6.3 Known limits" },
   {
     type: "p",
-    text: "The timing minigame reports input timestamps to the server, which re-derives the score from parameters the client never receives authoritatively. A modified client cannot exceed the score achievable by perfect play — but perfect play is achievable by automation. This ceiling is inherent to any latency-tolerant timing mechanic: the client must know the target in order to render it, and network latency prevents purely server-side timing.",
+    text: "The timing minigame reports input timestamps to the server, which re-derives the score from parameters the client never receives authoritatively. A modified client cannot exceed the score achievable by perfect play, but perfect play is achievable by automation. This ceiling is inherent to any latency-tolerant timing mechanic: the client must know the target in order to render it, and network latency prevents purely server-side timing.",
   },
   {
     type: "p",
-    text: "This is stated plainly rather than claimed as solved. Mitigation is treated as tuning — energy costs, cooldowns, and capping the marginal value of any single verb — rather than as a problem with a clean technical resolution. Sustained automation detection is a behavioural analysis problem and is out of scope for the current implementation.",
+    text: "This is stated plainly rather than claimed as solved. Mitigation is treated as tuning, energy costs, cooldowns, and capping the marginal value of any single verb, rather than as a problem with a clean technical resolution. Sustained automation detection is a behavioural analysis problem and is out of scope for the current implementation.",
   },
   { type: "h3", text: "6.4 Identity" },
   {
@@ -235,7 +235,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "The binding constraint at scale is replication bandwidth rather than computation. Every connected client receives state deltas for every other player at the tick rate, which scales quadratically with concurrency. The correct remedy is interest management — replicating only entities within a player's relevant region — which is a substantial but well-understood piece of work and is the first item on the scaling path. Beyond that lie a networked presence layer, a shared database, and finally multiple instances behind session affinity.",
+    text: "The binding constraint at scale is replication bandwidth rather than computation. Every connected client receives state deltas for every other player at the tick rate, which scales quadratically with concurrency. The correct remedy is interest management, replicating only entities within a player's relevant region, which is a substantial but well-understood piece of work and is the first item on the scaling path. Beyond that lie a networked presence layer, a shared database, and finally multiple instances behind session affinity.",
   },
   {
     type: "p",
@@ -289,7 +289,7 @@ export const SECTIONS = [
   { type: "h3", text: "9.1 Software cities" },
   {
     type: "p",
-    text: "Representing codebases as cities is an established visualisation technique, dating to research in the early 2000s and popularised more recently by tools that render version control history as skylines. The insight these share is that building height is an exceptionally efficient encoding of magnitude: humans compare heights accurately, pre-attentively, and across large sets simultaneously — which is precisely what a numeric table fails at.",
+    text: "Representing codebases as cities is an established visualisation technique, dating to research in the early 2000s and popularised more recently by tools that render version control history as skylines. The insight these share is that building height is an exceptionally efficient encoding of magnitude: humans compare heights accurately, pre-attentively, and across large sets simultaneously, which is precisely what a numeric table fails at.",
   },
   {
     type: "p",
@@ -298,12 +298,12 @@ export const SECTIONS = [
   { type: "h3", text: "9.2 Social worlds" },
   {
     type: "p",
-    text: "The retention model draws on browser-based social worlds — persistent avatars, ownable and decoratable personal space, and public identity within a shared place. The durable lesson from that category is that people return for a space they have invested in and for the other people in it, not for mechanics in isolation. Ownership must be visible to others or it is merely a number in a menu, which is why floors are rendered as lit windows rather than displayed on an inventory screen.",
+    text: "The retention model draws on browser-based social worlds, persistent avatars, ownable and decoratable personal space, and public identity within a shared place. The durable lesson from that category is that people return for a space they have invested in and for the other people in it, not for mechanics in isolation. Ownership must be visible to others or it is merely a number in a menu, which is why floors are rendered as lit windows rather than displayed on an inventory screen.",
   },
   { type: "h3", text: "9.3 On-chain games" },
   {
     type: "p",
-    text: "The category's dominant failure mode is well documented: a token launches before the game is demonstrably enjoyable, speculative holders arrive, the token declines, and the apparent playerbase evaporates because it was never a playerbase. A secondary failure mode is architectural — placing interactive state on-chain, which makes ordinary play slow and expensive.",
+    text: "The category's dominant failure mode is well documented: a token launches before the game is demonstrably enjoyable, speculative holders arrive, the token declines, and the apparent playerbase evaporates because it was never a playerbase. A secondary failure mode is architectural, placing interactive state on-chain, which makes ordinary play slow and expensive.",
   },
   {
     type: "p",
@@ -317,7 +317,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Three decisions follow. First, no wallet is required to play, and none is requested; the world is fully functional for an anonymous visitor because the oracle layer is read-only. Second, progress persists without an account, so a returning visitor is not punished for having declined to sign up. Third, every player begins with sufficient currency to take the central action — leasing a floor — within the first minutes, because the mechanic must be experienced rather than described to be understood.",
+    text: "Three decisions follow. First, no wallet is required to play, and none is requested; the world is fully functional for an anonymous visitor because the oracle layer is read-only. Second, progress persists without an account, so a returning visitor is not punished for having declined to sign up. Third, every player begins with sufficient currency to take the central action, leasing a floor, within the first minutes, because the mechanic must be experienced rather than described to be understood.",
   },
   {
     type: "p",
@@ -343,7 +343,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Synchronous events. Storms are the only mechanic that requires being present at a specific moment in a specific place. They exist to produce the experience of a crowd converging — the thing that makes a world feel populated rather than merely multiplayer. Their timing is set by market volatility, so they are unpredictable in a way scheduled content cannot be.",
+    text: "Synchronous events. Storms are the only mechanic that requires being present at a specific moment in a specific place. They exist to produce the experience of a crowd converging. The thing that makes a world feel populated rather than merely multiplayer. Their timing is set by market volatility, so they are unpredictable in a way scheduled content cannot be.",
   },
   {
     type: "p",
@@ -384,7 +384,7 @@ export const SECTIONS = [
     ],
   },
 
-  { type: "h2", text: "14 · Appendix A — parameters" },
+  { type: "h2", text: "14 · Appendix A, parameters" },
   {
     type: "p",
     text: "Values as implemented. All are configuration and expected to move under playtesting; they are recorded here so that claims elsewhere in this document are checkable.",
@@ -397,7 +397,7 @@ export const SECTIONS = [
       ["Remote interpolation delay", "100 ms"],
       ["Energy regeneration", "1 unit / 5 minutes, cap 100"],
       ["Shift cost", "12 energy, 30-minute per-building cooldown"],
-      ["Volatility tiers", "calm, normal, hot, extreme — 1x, 1.6x, 2.4x, 3.5x"],
+      ["Volatility tiers", "calm, normal, hot, extreme, 1x, 1.6x, 2.4x, 3.5x"],
       ["Floors per tower", "derived from height, bounded 6–40"],
       ["Storm duration", "approx. 3 minutes, 12–20 shards"],
       ["Signage cost", "8 shards + 120 $BLOCK + 20 energy"],
@@ -408,10 +408,10 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "The two staleness bounds differ by an order of magnitude on purpose. An equity feed that has not published for eleven hours is behaving correctly — the market was shut. A crypto feed silent for the same period indicates a real failure. Treating both with a single threshold would either reject normal overnight state or fail to detect genuine outages.",
+    text: "The two staleness bounds differ by an order of magnitude on purpose. An equity feed that has not published for eleven hours is behaving correctly. The market was shut. A crypto feed silent for the same period indicates a real failure. Treating both with a single threshold would either reject normal overnight state or fail to detect genuine outages.",
   },
 
-  { type: "h2", text: "15 · Appendix B — data sources" },
+  { type: "h2", text: "15 · Appendix B, data sources" },
   {
     type: "p",
     text: "All prices originate from Chainlink aggregator contracts deployed on Robinhood Chain mainnet, chain identifier 4663. Feeds are consumed through the standard AggregatorV3Interface, and every tracked feed reports eight decimals.",
@@ -422,14 +422,14 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "The tokenized equity feeds price the token rather than the underlying share directly. Because dividends are reinvested through a multiplier, the token price tracks total return and diverges from the headline share price over time. This is correct for the purpose here — the game requires a consistent, live reference series, not a quotation — but it is noted because it means a tower's height will not exactly match a price quoted elsewhere, and that discrepancy is expected rather than a defect.",
+    text: "The tokenized equity feeds price the token rather than the underlying share directly. Because dividends are reinvested through a multiplier, the token price tracks total return and diverges from the headline share price over time. This is correct for the purpose here. The game requires a consistent, live reference series, not a quotation, but it is noted because it means a tower's height will not exactly match a price quoted elsewhere, and that discrepancy is expected rather than a defect.",
   },
   {
     type: "p",
     text: "No proprietary or licensed market data is redistributed by this system. The game reads public on-chain state, as any participant may.",
   },
 
-  { type: "h2", text: "16 · Appendix C — rendering" },
+  { type: "h2", text: "16 · Appendix C, rendering" },
   {
     type: "p",
     text: "The client renders an isometric world in two dimensions rather than a three-dimensional scene. This is a deliberate choice with three justifications.",
@@ -444,18 +444,18 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "The third is that the entire visual identity is generated in code — facades, window grids, characters, signage and street surfaces are produced procedurally at runtime rather than loaded as assets. This removes an asset pipeline and an art dependency from the critical path, keeps the download negligible, and makes per-entity customisation free. The trade-off is a stylistic ceiling: procedural generation suits a neon aesthetic carried by light and colour, and would suit an illustrative one poorly. The generation layer is isolated behind factory functions so authored art can replace it without touching anything else.",
+    text: "The third is that the entire visual identity is generated in code, facades, window grids, characters, signage and street surfaces are produced procedurally at runtime rather than loaded as assets. This removes an asset pipeline and an art dependency from the critical path, keeps the download negligible, and makes per-entity customisation free. The trade-off is a stylistic ceiling: procedural generation suits a neon aesthetic carried by light and colour, and would suit an illustrative one poorly. The generation layer is isolated behind factory functions so authored art can replace it without touching anything else.",
   },
   {
     type: "p",
-    text: "Performance work concentrates on two techniques. Buildings share geometry and are drawn through instancing, so the skyline costs approximately the same regardless of how many towers exist. Lit windows are only drawn when a floor is actually owned, which means rendering cost scales with the size of the economy rather than the size of the map — an unowned city is nearly free to draw, and a heavily-owned one is exactly as expensive as it is interesting.",
+    text: "Performance work concentrates on two techniques. Buildings share geometry and are drawn through instancing, so the skyline costs approximately the same regardless of how many towers exist. Lit windows are only drawn when a floor is actually owned, which means rendering cost scales with the size of the economy rather than the size of the map, an unowned city is nearly free to draw, and a heavily-owned one is exactly as expensive as it is interesting.",
   },
   {
     type: "p",
-    text: "A level-of-detail threshold governs the transition to the zoomed-out view: below a certain scale, individual windows, characters and signage are dropped and towers reduce to glowing bars. This makes the full-city overview affordable and, incidentally, returns the display to something very close to a conventional chart — the city and the chart being the same object viewed at different distances.",
+    text: "A level-of-detail threshold governs the transition to the zoomed-out view: below a certain scale, individual windows, characters and signage are dropped and towers reduce to glowing bars. This makes the full-city overview affordable and, incidentally, returns the display to something very close to a conventional chart. The city and the chart being the same object viewed at different distances.",
   },
 
-  { type: "h2", text: "17 · Appendix D — glossary" },
+  { type: "h2", text: "17 · Appendix D, glossary" },
   {
     type: "table",
     rows: [
@@ -484,7 +484,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "The remaining work is not primarily technical. The world exists, the economy functions, and the contracts are written. What remains is establishing that people want to live there — and resolving, properly and with professional advice, the question of whether the economy can ever carry real value.",
+    text: "The remaining work is not primarily technical. The world exists, the economy functions, and the contracts are written. What remains is establishing that people want to live there, and resolving, properly and with professional advice, the question of whether the economy can ever carry real value.",
   },
   {
     type: "p",
@@ -492,7 +492,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "A final note on the data. Nothing in this system attempts to predict, recommend or intermediate anything. It reads public prices, converts them into architecture and weather, and lets people walk around inside the result. The market is used here as material — as a source of rhythm, difficulty and genuine surprise that no designer could author and no content schedule could replicate. That, rather than any financial claim, is the whole of the idea.",
+    text: "A final note on the data. Nothing in this system attempts to predict, recommend or intermediate anything. It reads public prices, converts them into architecture and weather, and lets people walk around inside the result. The market is used here as material, as a source of rhythm, difficulty and genuine surprise that no designer could author and no content schedule could replicate. That, rather than any financial claim, is the whole of the idea.",
   },
 
   {

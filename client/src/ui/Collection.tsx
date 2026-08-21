@@ -26,7 +26,7 @@ const TIERS = [
     label: "Landlord",
     color: "#22E8FF",
     supply: "~300",
-    grants: ["Everything a Resident has", "Found a chartered crew — 50 members, not 20"],
+    grants: ["Everything a Resident has", "Found a chartered crew, 50 members, not 20"],
   },
   {
     id: "penthouse",
@@ -82,7 +82,7 @@ export function CollectionPanelBody({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <p className="dim tiny crew-note">
-            You don't hold one. Everything in the game is open to you either way — a token
+            You don't hold one. Everything in the game is open to you either way, a token
             changes how you look and how much of a tower you can hold, never how much you
             earn.
           </p>

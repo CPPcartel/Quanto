@@ -53,7 +53,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
             <>
               <p className="lede">
                 Every tower in this city is a real company, and its height is that company's
-                real, live share price. You're not looking at a chart — you're standing in one.
+                real, live share price. You're not looking at a chart. You're standing in one.
               </p>
 
               <h3>Controls</h3>
@@ -97,16 +97,16 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>The four districts</h3>
               <ul>
                 <li>
-                  <b>Tech Row</b> — Apple, NVIDIA, Microsoft. Tall and volatile.
+                  <b>Tech Row</b>: Apple, NVIDIA, Microsoft. Tall and volatile.
                 </li>
                 <li>
-                  <b>Crypto Alley</b> — Bitcoin, Ethereum. The only district that never sleeps.
+                  <b>Crypto Alley</b>: Bitcoin, Ethereum. The only district that never sleeps.
                 </li>
                 <li>
-                  <b>Moonshot Mile</b> — Tesla, GameStop, quantum and rockets. Wildest swings.
+                  <b>Moonshot Mile</b>: Tesla, GameStop, quantum and rockets. Wildest swings.
                 </li>
                 <li>
-                  <b>Index Plaza</b> — broad funds and metals. Low, steady, dependable.
+                  <b>Index Plaza</b>: broad funds and metals. Low, steady, dependable.
                 </li>
               </ul>
             </>
@@ -115,7 +115,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
           {tab === "earn" && (
             <>
               <p className="lede">
-                Three ways to earn, and they feed each other. <b>CHARGE</b> is energy — it
+                Three ways to earn, and they feed each other. <b>CHARGE</b> is energy. It
                 refills on its own, one point every five minutes.
               </p>
 
@@ -131,7 +131,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
 
               <h3>2 · Lease a floor</h3>
               <p>
-                Buy a floor and <b>one window lights up</b> on that tower — permanently, for
+                Buy a floor and <b>one window lights up</b> on that tower, permanently, for
                 everyone. It then earns you $BLOCK forever, with no effort.
               </p>
               <p className="dim small">
@@ -148,7 +148,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
 
               <h3>4 · Mount a neon sign</h3>
               <p>
-                Once you own a floor somewhere, craft a sign — five characters, your colour —
+                Once you own a floor somewhere, craft a sign, five characters, your colour, 
                 and hang it on that building. Everyone sees it, and it earns a cut from
                 passers-by. Costs 8 shards, 120 $BLOCK and 20 CHARGE.
               </p>
@@ -158,7 +158,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
           {tab === "control" && (
             <>
               <p className="lede">
-                Floors aren't just income — they're territory. Whoever holds the most floors in
+                Floors aren't just income. They're territory. Whoever holds the most floors in
                 a tower puts their name on it, and takes a cut of everyone else's earnings
                 there.
               </p>
@@ -166,7 +166,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>Becoming a landlord</h3>
               <p>
                 Hold the largest share of a tower's floors <b>and</b> at least <b>25%</b> of the
-                whole building. Below that threshold the tower has no landlord at all — one
+                whole building. Below that threshold the tower has no landlord at all, one
                 floor in a building nobody wants shouldn't make you its owner.
               </p>
               <p>
@@ -177,7 +177,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>Royalties</h3>
               <p>
                 A landlord takes <b>10%</b> of what other owners earn in that tower. It's paid
-                from the yield as it's calculated, so you collect whether or not you're online —
+                from the yield as it's calculated, so you collect whether or not you're online, 
                 and it's the reason a tower is worth fighting over.
               </p>
               <p className="dim small">
@@ -187,7 +187,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
 
               <h3>Crews</h3>
               <p>
-                A crew pools its members' floors <b>for control only</b> — every floor, and
+                A crew pools its members' floors <b>for control only</b>: every floor, and
                 every coin it earns, stays with whoever bought it. That means joining a crew
                 costs you nothing and leaving takes nothing from you.
               </p>
@@ -200,7 +200,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>The floor market</h3>
               <p>
                 List any floor you own at your own price, and buy from other players. Prices
-                here are set by people, not by the volatility formula — the market panel shows
+                here are set by people, not by the volatility formula. The market panel shows
                 each asking price against what the tower itself would charge, so you can tell a
                 bargain from a fleecing.
               </p>
@@ -212,7 +212,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>Parks</h3>
               <p>
                 The green lots and the fountain plaza aren't only scenery. Stand in one and
-                your <b>CHARGE refills three times faster</b> — and CHARGE is what gates
+                your <b>CHARGE refills three times faster</b>: and CHARGE is what gates
                 everything active you can do, so a park is somewhere to actually go, not
                 just somewhere to look at.
               </p>
@@ -221,7 +221,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
                 always going to refill, which is why you can do it as long as you like.
               </p>
               <p className="dim small">
-                During a volatility storm, shards prefer open ground — so parks and the
+                During a volatility storm, shards prefer open ground, so parks and the
                 central plaza are where the good runs are.
               </p>
 
@@ -229,7 +229,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <p>
                 Press <b>Enter</b> to chat. You're heard by players standing near you, or by
                 everyone in your district on the district channel. There's no city-wide channel
-                — a place where every word reaches everyone stops feeling like a place.
+, a place where every word reaches everyone stops feeling like a place.
               </p>
             </>
           )}
@@ -250,7 +250,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>After hours</h3>
               <p>
                 The skyline freezes at the last price, fog rolls in, the city dims. Most floors
-                stop earning entirely — but Crypto Alley keeps running, because crypto trades
+                stop earning entirely, but Crypto Alley keeps running, because crypto trades
                 around the clock.
               </p>
 
@@ -263,11 +263,11 @@ export function Docs({ onClose }: { onClose: () => void }) {
 
               <h3>Yield tiers</h3>
               <p>
-                Payouts are bucketed by how volatile a company currently is —{" "}
+                Payouts are bucketed by how volatile a company currently is -{" "}
                 <span className="tier tier-calm">calm</span>,{" "}
                 <span className="tier tier-normal">normal</span>,{" "}
                 <span className="tier tier-hot">hot</span>,{" "}
-                <span className="tier tier-extreme">extreme</span> — at 1× up to 3.5×. Nothing
+                <span className="tier tier-extreme">extreme</span>, at 1× up to 3.5×. Nothing
                 pays more for a stock going up than down.
               </p>
             </>
@@ -283,7 +283,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
               <h3>What connecting does</h3>
               <p>
                 You sign one message proving the wallet is yours. It <b>costs no gas</b> and{" "}
-                <b>authorises no transactions</b>. Your guest progress carries over — and if
+                <b>authorises no transactions</b>. Your guest progress carries over, and if
                 that wallet has played from another browser, its save is restored instead.
               </p>
 
@@ -294,7 +294,7 @@ export function Docs({ onClose }: { onClose: () => void }) {
                 batches. That's why nothing here makes you wait for a confirmation.
               </p>
               <p className="dim small">
-                Reading prices is free — displaying this entire living city costs nothing
+                Reading prices is free, displaying this entire living city costs nothing
                 on-chain, which is why it works with no wallet at all.
               </p>
 

@@ -194,7 +194,7 @@ export function InboxPanelBody({
         </>
       ) : threads.length === 0 ? (
         <p className="dim tiny crew-note">
-          No messages. Click somebody's name in chat to write to them — it will be waiting
+          No messages. Click somebody's name in chat to write to them. It will be waiting
           whether or not they are in the city when you send it.
         </p>
       ) : (

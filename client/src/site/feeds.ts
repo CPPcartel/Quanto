@@ -193,7 +193,7 @@ export function useChainFeeds(intervalMs = 30_000): ChainState {
 }
 
 export function formatPrice(price: number) {
-  if (!isFinite(price) || price <= 0) return "—";
+  if (!isFinite(price) || price <= 0) return "-";
   if (price >= 1000) return price.toLocaleString("en-US", { maximumFractionDigits: 0 });
   if (price >= 1) return price.toFixed(2);
   return price.toPrecision(3);

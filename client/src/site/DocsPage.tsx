@@ -107,7 +107,7 @@ function useSections(): Section[] {
       body: (
         <>
           <p className="doc-lede">
-            Quanto runs in the browser. No download, no signup, and no wallet — click{" "}
+            Quanto runs in the browser. No download, no signup, and no wallet, click{" "}
             <a {...linkProps("/play")}>Enter the city</a> and you're in.
           </p>
           <p>
@@ -118,7 +118,7 @@ function useSections(): Section[] {
           </p>
 
           <Callout tone="do" title="The fastest way to understand the game">
-            Walk to any tower, click <b>Lease a floor</b>, then look up. One window is now lit —
+            Walk to any tower, click <b>Lease a floor</b>, then look up. One window is now lit, 
             and it's lit for everyone else in the city too. That's the whole idea in one action.
           </Callout>
 
@@ -127,7 +127,7 @@ function useSections(): Section[] {
             <tbody>
               <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Walk</td></tr>
               <tr><td><kbd>Shift</kbd></td><td>Run</td></tr>
-              <tr><td>Scroll</td><td>Zoom — street level out to the whole city</td></tr>
+              <tr><td>Scroll</td><td>Zoom: street level out to the whole city</td></tr>
               <tr><td><kbd>M</kbd></td><td>Snap between street view and map view</td></tr>
               <tr><td>Click a tower</td><td>Inspect it from anywhere, no need to walk over</td></tr>
               <tr><td><kbd>E</kbd></td><td>Clock in for a shift when near a tower</td></tr>
@@ -138,11 +138,11 @@ function useSections(): Section[] {
 
           <h3>What you're looking at</h3>
           <ul className="doc-list">
-            <li><b>Top centre</b> — your wallet: $BLOCK, shards and the CHARGE bar.</li>
-            <li><b>Top strip</b> — a live tape of every tracked feed.</li>
-            <li><b>Top right</b> — minimap, zoom level, and a render diagnostics panel.</li>
-            <li><b>Bottom right</b> — the inspector for whichever tower you're near or have clicked.</li>
-            <li><b>Bottom centre</b> — the leaderboard of the brightest towers.</li>
+            <li><b>Top centre</b>: your wallet, holding $BLOCK, shards and the CHARGE bar.</li>
+            <li><b>Top strip</b>: a live tape of every tracked feed.</li>
+            <li><b>Top right</b>: minimap, zoom level, and a render diagnostics panel.</li>
+            <li><b>Bottom right</b>: the inspector for whichever tower you're near or have clicked.</li>
+            <li><b>Bottom centre</b>: the leaderboard of the brightest towers.</li>
           </ul>
         </>
       ),
@@ -161,7 +161,7 @@ function useSections(): Section[] {
           <h3>Why height uses a log scale</h3>
           <p>
             Using the raw price as height doesn't work. Bitcoin trades around $63,000 and
-            GameStop around $24 — a linear mapping makes one tower 2,650 times taller than the
+            GameStop around $24, a linear mapping makes one tower 2,650 times taller than the
             other, and every building in between collapses into an unreadable smear at the
             bottom of the screen.
           </p>
@@ -191,7 +191,7 @@ function useSections(): Section[] {
               </tr>
               <tr>
                 <td>Index Plaza</td>
-                <td>Broad funds and metals. Low, steady and dependable — the safe entry point.</td>
+                <td>Broad funds and metals. Low, steady and dependable. The safe entry point.</td>
               </tr>
             </tbody>
           </table>
@@ -211,7 +211,7 @@ function useSections(): Section[] {
       body: (
         <>
           <p className="doc-lede">
-            Two resources drive everything. <b>$BLOCK</b> is money. <b>CHARGE</b> is energy — it
+            Two resources drive everything. <b>$BLOCK</b> is money. <b>CHARGE</b> is energy. It
             refills on its own at one point every five minutes, capped at 100.
           </p>
           <p>
@@ -224,11 +224,11 @@ function useSections(): Section[] {
           <h3>Where money comes from, and where it goes</h3>
           <table className="kv">
             <tbody>
-              <tr><td>Shifts</td><td>Source — one-off payout, scaled by volatility tier and your accuracy</td></tr>
-              <tr><td>Floors</td><td>Source — continuous, but only while the feed is live</td></tr>
-              <tr><td>Signs</td><td>Source — small trickle from passing players</td></tr>
-              <tr><td>Buying floors</td><td>Sink — the currency is destroyed, not pooled</td></tr>
-              <tr><td>Crafting signs</td><td>Sink — consumes both shards and $BLOCK</td></tr>
+              <tr><td>Shifts</td><td>Source: one-off payout, scaled by volatility tier and your accuracy</td></tr>
+              <tr><td>Floors</td><td>Source: continuous, but only while the feed is live</td></tr>
+              <tr><td>Signs</td><td>Source: small trickle from passing players</td></tr>
+              <tr><td>Buying floors</td><td>Sink: the currency is destroyed, not pooled</td></tr>
+              <tr><td>Crafting signs</td><td>Sink: consumes both shards and $BLOCK</td></tr>
             </tbody>
           </table>
           <p>
@@ -246,7 +246,7 @@ function useSections(): Section[] {
       body: (
         <>
           <p className="doc-lede">
-            The core mechanic. Buy a floor and one window lights up on that tower — permanently,
+            The core mechanic. Buy a floor and one window lights up on that tower, permanently,
             visible to every player in the city.
           </p>
 
@@ -268,7 +268,7 @@ function useSections(): Section[] {
 
           <h3>What a floor earns</h3>
           <p>
-            Yield accrues continuously — but <b>only while that company's feed is live</b>. A
+            Yield accrues continuously, but <b>only while that company's feed is live</b>. A
             frozen feed pays nothing at all. This is what gives the closing bell real weight
             rather than being a lighting change: at 16:00 New York time, most of the city's
             income simply stops.
@@ -290,7 +290,7 @@ function useSections(): Section[] {
         <>
           <p className="doc-lede">
             Almost every payout in the game is scaled by how much its company is currently
-            moving — not by which direction it moves.
+            moving, not by which direction it moves.
           </p>
           <p>
             The server measures realised volatility from a rolling window of observed prices,
@@ -299,15 +299,15 @@ function useSections(): Section[] {
 
           <table className="kv tier-table">
             <tbody>
-              <tr><td><span className="tier tier-calm">calm</span></td><td>1.0× — barely moving. Predictable, low return.</td></tr>
-              <tr><td><span className="tier tier-normal">normal</span></td><td>1.6× — ordinary trading activity.</td></tr>
-              <tr><td><span className="tier tier-hot">hot</span></td><td>2.4× — something is happening.</td></tr>
-              <tr><td><span className="tier tier-extreme">extreme</span></td><td>3.5× — storm territory.</td></tr>
+              <tr><td><span className="tier tier-calm">calm</span></td><td>1.0×: barely moving. Predictable, low return.</td></tr>
+              <tr><td><span className="tier tier-normal">normal</span></td><td>1.6×: ordinary trading activity.</td></tr>
+              <tr><td><span className="tier tier-hot">hot</span></td><td>2.4×: something is happening.</td></tr>
+              <tr><td><span className="tier tier-extreme">extreme</span></td><td>3.5×: storm territory.</td></tr>
             </tbody>
           </table>
 
           <Callout tone="note" title="Why buckets and not a smooth curve">
-            Two reasons. Coarse tiers make decisions legible — you can reason about "this tower
+            Two reasons. Coarse tiers make decisions legible. You can reason about "this tower
             is hot" without modelling a payoff curve. And a four-step, direction-neutral function
             is deliberately far from anything that behaves like a financial derivative. Nothing
             pays more for a stock going up than for the same stock going down.
@@ -341,7 +341,7 @@ function useSections(): Section[] {
           </table>
 
           <p>
-            The per-building cooldown exists so one lucrative tower can't be farmed all day — to
+            The per-building cooldown exists so one lucrative tower can't be farmed all day, to
             keep earning you have to move around the city, which is also how you end up
             somewhere when a storm breaks.
           </p>
@@ -370,7 +370,7 @@ function useSections(): Section[] {
 
           <Callout tone="do" title="Storms are free">
             No energy cost, no ownership requirement. They're designed to pull everyone online
-            into the same street at the same moment — the thing that makes a world feel
+            into the same street at the same moment. The thing that makes a world feel
             populated rather than merely multiplayer.
           </Callout>
 
@@ -391,8 +391,8 @@ function useSections(): Section[] {
             The only way to write something of your own onto the shared skyline.
           </p>
           <p>
-            Once you own at least one floor in a tower, you can craft a sign — up to five
-            characters, in a colour of your choice — and mount it on that tower's facade. It
+            Once you own at least one floor in a tower, you can craft a sign, up to five
+            characters, in a colour of your choice, and mount it on that tower's facade. It
             glows and flickers there for every player in the city, and earns a small amount each
             time somebody walks past.
           </p>
@@ -428,7 +428,7 @@ function useSections(): Section[] {
 
           <p>
             Robinhood's equity feeds publish 24/5. Outside market hours they hold their last
-            price — they don't fail, they just stop changing. Rather than hide that, the game is
+            price. They don't fail, they just stop changing. Rather than hide that, the game is
             built on it: the skyline freezes, fog rolls in, the light drops, and floors stop
             paying.
           </p>
@@ -478,7 +478,7 @@ function useSections(): Section[] {
           <p>
             Consuming data from a blockchain requires no transaction, no wallet and no gas. That
             single fact is why the entire living city renders for someone who has never connected
-            a wallet — and why the landing page can show live prices with no backend at all.
+            a wallet, and why the landing page can show live prices with no backend at all.
           </p>
         </>
       ),
@@ -497,7 +497,7 @@ function useSections(): Section[] {
           <h3>What connecting actually does</h3>
           <p>
             You sign one message proving the wallet is yours. It <b>costs no gas</b> and{" "}
-            <b>authorises no transactions</b> — a signature is not a transaction. The server
+            <b>authorises no transactions</b>: a signature is not a transaction. The server
             checks it against a single-use code that expires in five minutes, so a captured
             signature can't be replayed.
           </p>
@@ -511,7 +511,7 @@ function useSections(): Section[] {
 
           <Callout tone="note" title="Don't have a wallet?">
             You don't need one to play. If you want one, MetaMask is the common choice. The game
-            will offer to add Robinhood Chain automatically — you don't have to configure
+            will offer to add Robinhood Chain automatically. You don't have to configure
             anything by hand.
           </Callout>
         </>
@@ -535,14 +535,14 @@ function useSections(): Section[] {
             </Faq>
             <Faq q="Why is the city dark and foggy?">
               The US market is closed. Equity feeds are frozen at their last price, so the city
-              is idle. Head to Crypto Alley — those feeds run 24/7 and that district stays live.
+              is idle. Head to Crypto Alley, those feeds run 24/7 and that district stays live.
             </Faq>
             <Faq q="Why does every tower say 'calm'?">
               Volatility is measured from a rolling window of prices, so after a server restart
               it takes several twenty-second polls to build up enough history. Tiers populate
               within a few minutes.
             </Faq>
-            <Faq q="Nothing is rendering — the screen is black.">
+            <Faq q="Nothing is rendering. The screen is black.">
               Check the diagnostics panel in the top right. If <b>city built</b> says no but
               towers shows 38, the renderer failed. If towers shows 0, the game server isn't
               reachable.
@@ -554,7 +554,7 @@ function useSections(): Section[] {
             <Faq q="Is $BLOCK tradeable?">
               Not today. The contracts are written and tested but not deployed, and making the
               token transferable is gated behind an external security audit and legal review.
-              This is deliberate — see the whitepaper.
+              This is deliberate, see the whitepaper.
             </Faq>
             <Faq q="Where's the full technical detail?">
               The{" "}

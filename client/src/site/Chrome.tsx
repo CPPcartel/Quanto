@@ -196,7 +196,7 @@ export function Social({ compact = false }: { compact?: boolean }) {
             </svg>
           </a>
         ) : (
-          <span key={label} className="social-off" title={`${label} — link not set yet`}>
+          <span key={label} className="social-off" title={`${label}, link not set yet`}>
             <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true">
               {path}
             </svg>

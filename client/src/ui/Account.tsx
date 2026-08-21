@@ -46,7 +46,7 @@ export function AccountPanel() {
             Save your progress
           </button>
           <p className="dim tiny">
-            Log in with email — a wallet is created for you, no seed phrase.
+            Log in with email, a wallet is created for you, no seed phrase.
           </p>
         </div>
       </div>

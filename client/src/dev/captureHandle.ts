@@ -35,5 +35,5 @@ export function installCaptureHandle() {
     camera.zoom = Math.max(camera.min, Math.min(camera.max, z));
   };
 
-  console.info("[capture] dev handle installed — window.__ccWorld");
+  console.info("[capture] dev handle installed, window.__ccWorld");
 }

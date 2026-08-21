@@ -534,7 +534,7 @@ export class CityLayer {
           : "";
         if (tower.landlord.text !== owner) tower.landlord.text = owner;
         if (owner) tower.landlord.style.fill = t.landlordColor || "#ECEDF3";
-        const priceText = t.price > 0 ? `$${fmt(t.price)}` : "—";
+        const priceText = t.price > 0 ? `$${fmt(t.price)}` : "-";
         const changeText = t.frozen
           ? "◆ frozen"
           : `${t.changePct >= 0 ? "▲" : "▼"} ${Math.abs(t.changePct).toFixed(2)}%`;

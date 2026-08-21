@@ -152,13 +152,13 @@ export function HeightScaleDiagram() {
   return (
     <Figure
       wide
-      caption="Left: raw price as height — Bitcoin is 2,650× GameStop, so everything else flattens to nothing. Right: the logarithmic scale actually used, which keeps every tower readable while preserving order."
+      caption="Left: raw price as height. Bitcoin is 2,650× GameStop, so everything else flattens to nothing. Right: the logarithmic scale actually used, which keeps every tower readable while preserving order."
     >
       <svg viewBox="0 0 760 260" role="img" aria-label="Comparison of linear and logarithmic height scaling across five tickers.">
         <Defs />
 
-        <text x="14" y="20" className="dg-head">LINEAR — unusable</text>
-        <text x="410" y="20" className="dg-head dg-head-on">LOGARITHMIC — what we use</text>
+        <text x="14" y="20" className="dg-head">LINEAR: unusable</text>
+        <text x="410" y="20" className="dg-head dg-head-on">LOGARITHMIC: what we use</text>
 
         {/* linear group */}
         <line x1="14" y1="220" x2="368" y2="220" className="axis" />
@@ -250,7 +250,7 @@ export function MarketDayDiagram() {
         </g>
 
         <text x="380" y="196" textAnchor="middle" className="e-label">
-          Crypto feeds run 24/7 — that district never sleeps
+          Crypto feeds run 24/7. That district never sleeps
         </text>
       </svg>
     </Figure>
@@ -375,7 +375,7 @@ export function FloorDiagram() {
 
   return (
     <Figure
-      caption="Floor count comes from the tower's height, which comes from the price. Each leased floor lights one window for everyone — ownership is readable from the street with no interface at all."
+      caption="Floor count comes from the tower's height, which comes from the price. Each leased floor lights one window for everyone, ownership is readable from the street with no interface at all."
     >
       <svg viewBox="0 0 420 280" role="img" aria-label="A tower cross-section showing how leased floors render as lit windows.">
         <Defs />

@@ -352,7 +352,7 @@ export const world = {
    */
   debug: {
     fps: 0,
-    canvas: "—",
+    canvas: "-",
     built: false,
     /** Set when the renderer fails to start at all. */
     fatal: "",

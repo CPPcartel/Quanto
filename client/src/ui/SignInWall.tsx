@@ -44,7 +44,7 @@ export function SignInWall() {
 
         <p className="dim signin-copy">
           Every resident has an account, so your floors, crew and balance follow you to any
-          device — and so the people you meet in the city are the same people tomorrow.
+          device, and so the people you meet in the city are the same people tomorrow.
         </p>
 
         {/* The modal opens by itself above; this is the way back if it was
@@ -55,7 +55,7 @@ export function SignInWall() {
 
         <p className="dim tiny signin-note">
           Sign in with an email or connect a wallet. You can connect a wallet later to
-          bring an NFT in — your city is yours either way.
+          bring an NFT in, your city is yours either way.
         </p>
       </div>
     </div>

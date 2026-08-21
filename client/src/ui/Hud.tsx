@@ -214,7 +214,7 @@ function Leaderboard() {
                 )
               ) : playerRows.length === 0 ? (
                 <p className="dim tiny">
-                  No entries yet — boards refresh about once a minute.
+                  No entries yet, boards refresh about once a minute.
                 </p>
               ) : (
                 playerRows.map((r) => (
@@ -341,7 +341,7 @@ function Wallet() {
           </div>
           {/* A bonus nobody notices is a bonus nobody walks to, so the HUD
               says it plainly the moment the player steps onto grass. */}
-          {w.resting && <p className="resting-note tiny">❋ resting — CHARGE ×3</p>}
+          {w.resting && <p className="resting-note tiny">❋ resting, CHARGE ×3</p>}
         </div>
       </div>
     </div>
@@ -473,7 +473,7 @@ function SkyClock() {
       <span className="dim tiny">
         {PHASE_GLYPH[phase] ?? "☾"} {phase}
       </span>
-      <span className="dim tiny mono" title="Your device's local time — the sky follows it">
+      <span className="dim tiny mono" title="Your device's local time. The sky follows it">
         {clockLabel(now)}
       </span>
     </div>
@@ -510,7 +510,7 @@ function TopLeft() {
           </div>
           <div>
             <dt>Most volatile</dt>
-            <dd>{w.peakSymbol || "—"}</dd>
+            <dd>{w.peakSymbol || "-"}</dd>
           </div>
           <div>
             <dt>Players</dt>
@@ -679,12 +679,12 @@ function FloorPanel({ ticker }: { ticker: TickerView }) {
 
       {flash && (
         <p className={`flash small ${flash.ok ? "up" : "down"}`}>
-          {flash.ok ? `Leased a floor in ${flash.symbol} — window lit.` : flash.reason}
+          {flash.ok ? `Leased a floor in ${flash.symbol}, window lit.` : flash.reason}
         </p>
       )}
 
       {ticker.frozen && (
-        <p className="dim tiny">Feed frozen — floors here earn nothing until the market reopens.</p>
+        <p className="dim tiny">Feed frozen, floors here earn nothing until the market reopens.</p>
       )}
 
       <button className="shift" onClick={() => startShift(ticker.symbol)}>
@@ -728,7 +728,7 @@ function SignCrafter({ ticker }: { ticker: TickerView }) {
         </button>
         {flash && (
           <p className={`flash small ${flash.ok ? "up" : "down"}`}>
-            {flash.ok ? "Sign is up — the whole city can see it." : flash.reason}
+            {flash.ok ? "Sign is up. The whole city can see it." : flash.reason}
           </p>
         )}
       </>

@@ -64,7 +64,7 @@ export function Landing() {
 
           <p className="scroll-hint">
             <span className="scroll-line" />
-            scroll — the page runs a trading day
+            scroll. The page runs a trading day
           </p>
         </div>
 
@@ -113,15 +113,15 @@ export function Landing() {
           <Panel title="Why it couldn't exist" >
             <ul className="reasons">
               <li>
-                <b>Price feeds</b> — most chains carry crypto pairs only. Equities are the hard
+                <b>Price feeds</b>: most chains carry crypto pairs only. Equities are the hard
                 part, and they're the whole idea here.
               </li>
               <li>
-                <b>Reads are free</b> — the city renders from on-chain data without a wallet, a
+                <b>Reads are free</b>: the city renders from on-chain data without a wallet, a
                 transaction, or a cent of gas.
               </li>
               <li>
-                <b>Fair ordering</b> — Robinhood Chain sequences first-come-first-served, so
+                <b>Fair ordering</b>: Robinhood Chain sequences first-come-first-served, so
                 contested actions resolve on arrival, not on who bids highest.
               </li>
             </ul>
@@ -150,7 +150,7 @@ export function Landing() {
         <div className="two-col">
           <div>
             <p>
-              Buy a floor in a tower and one window lights up — permanently, visible to every
+              Buy a floor in a tower and one window lights up, permanently, visible to every
               other player in the city. A dark building means nobody owns it. A blazing one is
               contested real estate somebody paid for.
             </p>
@@ -160,7 +160,7 @@ export function Landing() {
               go quiet more often.
             </p>
             <p className="muted">
-              The skyline's glow isn't decoration. It's the player economy, rendered — readable
+              The skyline's glow isn't decoration. It's the player economy, rendered: readable
               from three streets away without opening a single menu.
             </p>
           </div>
@@ -186,7 +186,7 @@ export function Landing() {
           <Verb
             n="03"
             title="Lease a floor"
-            body="Spend once, earn continuously. Your window stays lit whether you're online or not — as long as that market is open."
+            body="Spend once, earn continuously. Your window stays lit whether you're online or not, as long as that market is open."
             cost="the endgame · passive income"
           />
         </div>
@@ -215,7 +215,7 @@ export function Landing() {
           <div>
             <p>
               Robinhood's equity feeds publish 24/5. When Wall Street shuts they hold their last
-              price — so the skyline freezes with them, fog closes in, and floors stop paying.
+              price, so the skyline freezes with them, fog closes in, and floors stop paying.
             </p>
             <p>
               Crypto Alley stays lit, because crypto genuinely doesn't sleep. That's a real
@@ -226,8 +226,8 @@ export function Landing() {
               Right now:{" "}
               <b className={chain.marketOpen ? "up" : "down"}>
                 {chain.marketOpen
-                  ? "open — towers are moving"
-                  : `closed — ${frozen} of ${chain.readings.length} feeds frozen`}
+                  ? "open: towers are moving"
+                  : `closed: ${frozen} of ${chain.readings.length} feeds frozen`}
               </b>
             </p>
           </div>
@@ -310,7 +310,7 @@ export function Landing() {
             be real and portable between devices.
           </Faq>
           <Faq q="Does it cost anything?">
-            No. Playing is free, and reading prices from the chain costs nothing — no
+            No. Playing is free, and reading prices from the chain costs nothing, no
             transaction, no gas. If you connect a wallet, signing in is a signature, not a
             transaction.
           </Faq>
@@ -324,7 +324,7 @@ export function Landing() {
             security audit and legal review.
           </Faq>
           <Faq q="What happens at the weekend?">
-            The equity feeds freeze, so most of the city does too — it becomes building and
+            The equity feeds freeze, so most of the city does too. It becomes building and
             crafting time rather than earning time. Crypto Alley stays live all week.
           </Faq>
           <Faq q="Can I lose money?">
@@ -337,7 +337,7 @@ export function Landing() {
       {/* ============ CLOSE ============ */}
       <section className="band close">
         <div className="band-inner">
-          <p className="sect-num">20:00 — the city is still open</p>
+          <p className="sect-num">20:00, and the city is still open</p>
           <h2>
             Everything above is live.
             <br />
@@ -465,7 +465,7 @@ function BellSection({ open }: { open: boolean }) {
             every weekday, and it's the city's loudest.
           </p>
           <p className="muted">
-            Nothing schedules this. There's no timer in the code — the game is simply watching
+            Nothing schedules this. There's no timer in the code. The game is simply watching
             real feeds, and real feeds wake up when the market does.
           </p>
         </div>
@@ -483,7 +483,7 @@ function BellSection({ open }: { open: boolean }) {
           ))}
         </div>
         <p className="bell-status">
-          {open ? "the bell has rung — market is open right now" : "the market is currently closed"}
+          {open ? "the bell has rung, market is open right now" : "the market is currently closed"}
         </p>
       </div>
     </section>
@@ -514,7 +514,7 @@ function StormSection({ movers }: { movers: Array<{ symbol: string; drift: numbe
             </p>
             <p>
               First touch wins, resolved on the server, so there's no way to claim one twice and
-              no way to buy your way to the front. Free to join, which is the point — it pulls
+              no way to buy your way to the front. Free to join, which is the point. It pulls
               everyone outdoors at the same moment.
             </p>
             <p className="muted">
@@ -564,7 +564,7 @@ function ChainStrip({
       </div>
       <div>
         <span className="k">block</span>
-        <span className="v mono">{block ? block.toLocaleString() : "—"}</span>
+        <span className="v mono">{block ? block.toLocaleString() : "-"}</span>
       </div>
       <div>
         <span className="k">feeds</span>

@@ -55,7 +55,7 @@ export function ClubBanner() {
         </p>
         {!holder && (
           <p className="dim tiny club-locked">
-            Holders only — a Quanto Residents NFT gets you past the rope.
+            Holders only, a Quanto Residents NFT gets you past the rope.
           </p>
         )}
       </div>
