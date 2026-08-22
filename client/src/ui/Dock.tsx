@@ -117,7 +117,7 @@ export const Dock = forwardRef<DockHandle>(function Dock(_props, ref) {
       </div>
 
       {open && (
-        <div className="panel compact dock-panel">
+        <div className={`panel compact dock-panel ${open === "profile" ? "wide" : ""}`}>
           {open === "crew" && <CrewPanelBody onClose={() => setOpen(null)} />}
           {open === "market" && <MarketPanelBody onClose={() => setOpen(null)} />}
           {open === "residents" && <CollectionPanelBody onClose={() => setOpen(null)} />}

@@ -997,6 +997,19 @@ button.emote-btn:hover { border-color: var(--violet); }
   font-weight: 700;
 }
 
+/*
+  The profile is wider than the other panels because it holds more.
+
+  Six trait rows wrapping across a 20rem column is what made this tall enough
+  to need scrolling at all; at 28rem most rows fit on one line and the whole
+  panel is roughly half the height.
+*/
+.dock-panel.wide {
+  width: 28rem;
+  /* .panel caps every panel at 22rem, which silently clamped this to 352px. */
+  max-width: 28rem;
+}
+
 .dock-panel {
   width: 20rem;
   display: flex;
@@ -1005,6 +1018,29 @@ button.emote-btn:hover { border-color: var(--violet); }
   /* The panel scrolls rather than growing off the bottom of the screen. */
   overflow-y: auto;
   max-height: calc(100vh - 20rem);
+}
+
+/*
+  The default chrome scrollbar is wide, bright, and belongs to the browser
+  rather than to the city. Thin and dim keeps a long panel usable without
+  putting a light grey bar through the middle of a dark interface.
+*/
+.dock-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border) transparent;
+}
+.dock-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.dock-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dock-panel::-webkit-scrollbar-thumb {
+  background: var(--panel-border);
+  border-radius: 3px;
+}
+.dock-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
 }
 
 .crew-chip {
@@ -1466,10 +1502,15 @@ button.emote-btn:hover { border-color: var(--violet); }
 .profile-body {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  max-height: 60vh;
-  /* The trait grid is taller than the dock on a short window. */
-  overflow-y: auto;
+  gap: 0.85rem;
+  /*
+    No max-height and no overflow here on purpose.
+
+    .dock-panel already scrolls. Giving this one its own limit as well put a
+    scroller inside a scroller, so the inner one filled first and the browser
+    drew its default scrollbar down the middle of the panel. One scroll
+    container per panel, and it is the outer one.
+  */
 }
 .profile-section {
   display: flex;
@@ -1525,10 +1566,10 @@ button.emote-btn:hover { border-color: var(--violet); }
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
-  padding: 0.25rem 0;
+  padding: 0.1rem 0;
 }
 .trait-label {
-  flex: 0 0 4.6rem;
+  flex: 0 0 4.2rem;
   font-size: 0.75rem;
   color: var(--ink-muted);
 }
