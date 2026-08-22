@@ -9,7 +9,7 @@ import {
   requestProfile,
   signInWithWallet,
 } from "../net/connection";
-import { connectWallet, hasWallet, shortAddress } from "../net/wallet";
+import { connectWallet, hasWallet, shortAddress, watchProvider } from "../net/wallet";
 
 /**
  * The player's own profile.
@@ -187,6 +187,10 @@ export function ProfilePanelBody() {
 function WalletSection({ profile }: { profile: typeof world.profile }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Subscribed rather than sampled: extensions inject late, and a plain call
+  // during render would answer "none" for a browser that gets one a moment
+  // later, with nothing to trigger a re-render when it does.
+  const walletAvailable = useSyncExternalStore(watchProvider, hasWallet, () => false);
 
   const wallets = profile?.wallets ?? [];
 
@@ -223,7 +227,7 @@ function WalletSection({ profile }: { profile: typeof world.profile }) {
         </p>
       )}
 
-      {hasWallet() ? (
+      {walletAvailable ? (
         <>
           <button className="ghost-btn" disabled={busy} onClick={connect}>
             {busy ? "Check your wallet…" : wallets.length ? "Connect another" : "Connect a wallet"}

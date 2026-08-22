@@ -801,10 +801,6 @@ export function sendEmote(name: string) {
   room?.send("emote", name);
 }
 
-export function setName(name: string) {
-  room?.send("setName", name);
-}
-
 /** Ask the server to lease one floor. All validation happens server-side. */
 export function buyFloor(symbol: string) {
   room?.send("buyFloor", symbol);

@@ -2,7 +2,6 @@ import { useSyncExternalStore, useEffect, useState, useRef } from "react";
 import { world, subscribeUi, getUiVersion, type TickerView } from "../net/world";
 import {
   retryNow,
-  setName,
   buyFloor,
   onBuyResult,
   startShift,
@@ -117,7 +116,7 @@ export function Hud() {
       <TopLeft />
       <Wallet />
       <Inspector />
-      <Controls />
+      <Controls onRename={() => dock.current?.openProfile()} />
       <ZoomIndicator />
       <DebugReadout />
       <ShiftGame />
@@ -815,10 +814,8 @@ function SignCrafter({ ticker }: { ticker: TickerView }) {
   );
 }
 
-function Controls() {
+function Controls({ onRename }: { onRename: () => void }) {
   const w = useWorld();
-  const [name, setLocalName] = useState("");
-  const [editing, setEditing] = useState(false);
 
   return (
     <div className="hud bottom-left">
@@ -827,31 +824,10 @@ function Controls() {
           <span className="dim small">
             <b style={{ color: w.localColor }}>{w.localName}</b>
           </span>
-          <button className="link" onClick={() => setEditing((v) => !v)}>
-            {editing ? "cancel" : "rename"}
+          <button className="link" onClick={onRename}>
+            rename
           </button>
         </div>
-
-        {editing && (
-          <form
-            className="row"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (name.trim()) setName(name.trim());
-              setEditing(false);
-              setLocalName("");
-            }}
-          >
-            <input
-              autoFocus
-              value={name}
-              maxLength={16}
-              placeholder="your name"
-              onChange={(e) => setLocalName(e.target.value)}
-            />
-            <button type="submit">set</button>
-          </form>
-        )}
 
         <p className="keys">
           <kbd>W</kbd>

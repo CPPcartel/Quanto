@@ -36,13 +36,88 @@ interface Eip1193 extends EIP1193Provider {
   isMetaMask?: boolean;
 }
 
+/**
+ * A provider that announced itself under EIP-6963.
+ *
+ * Reading window.ethereum alone is no longer enough. Browsers with more than
+ * one wallet installed leave that property to whoever won the race, and some
+ * wallets now announce only over EIP-6963 and never set it at all, so a real,
+ * installed, working wallet reads as "no wallet detected".
+ */
+let announced: Eip1193 | null = null;
+
 function provider(): Eip1193 | null {
   const eth = (window as unknown as { ethereum?: Eip1193 }).ethereum;
-  return eth ?? null;
+  return eth ?? announced;
 }
 
 export function hasWallet(): boolean {
   return provider() !== null;
+}
+
+// ---------------------------------------------------------------------------
+// Discovery
+// ---------------------------------------------------------------------------
+
+/**
+ * Wallets arrive late, and the UI has to notice.
+ *
+ * Extensions inject their provider on their own schedule, usually after the
+ * app has already rendered. Checking once during render therefore answers "no
+ * wallet" for a browser that is about to have one, and because a plain
+ * function call creates no subscription, React never re-renders to correct
+ * itself: the connect button stays hidden for the whole session and the panel
+ * tells a MetaMask user to go and install MetaMask.
+ *
+ * So detection is a subscription. Three signals feed it, because no single one
+ * covers every wallet:
+ *
+ *   1. EIP-6963 announcements, the modern standard, which is the only one that
+ *      finds a wallet that never touches window.ethereum.
+ *   2. MetaMask's own "ethereum#initialized" event.
+ *   3. A short poll, for wallets that inject window.ethereum silently and fire
+ *      nothing at all. It stops as soon as it finds something, and gives up
+ *      after a few seconds rather than running forever.
+ */
+const watchers = new Set<() => void>();
+let discovering = false;
+
+function notify() {
+  for (const w of watchers) w();
+}
+
+function discover() {
+  if (discovering) return;
+  discovering = true;
+
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    const detail = (event as CustomEvent<{ provider?: Eip1193 }>).detail;
+    if (!detail?.provider) return;
+    // First announcement wins, matching how window.ethereum behaves. Picking
+    // between several is a wallet-chooser UI, which this deliberately is not.
+    announced ??= detail.provider;
+    notify();
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+  window.addEventListener("ethereum#initialized", notify, { once: true });
+
+  let tries = 0;
+  const timer = setInterval(() => {
+    if (provider() || ++tries > 20) {
+      clearInterval(timer);
+      notify();
+    }
+  }, 250);
+}
+
+/** Subscribe to wallet availability. Returns an unsubscribe, for React. */
+export function watchProvider(onChange: () => void): () => void {
+  watchers.add(onChange);
+  discover();
+  return () => {
+    watchers.delete(onChange);
+  };
 }
 
 /** Add or switch the wallet to Robinhood Chain. */

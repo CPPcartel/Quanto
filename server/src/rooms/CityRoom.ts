@@ -212,6 +212,36 @@ export class CityRoom extends Room<CityState> {
       console.error("[room] restoreWorld failed:", err?.message ?? err)
     );
 
+    /**
+     * Anything we do not recognise is logged and dropped.
+     *
+     * This is not tidiness, it is a kick. Colyseus's default handler for an
+     * unregistered message type calls client.leave(WS_CLOSE_WITH_ERROR) in
+     * production — and only client.error() in dev mode, so a client that has
+     * drifted out of sync with the server disconnects the player in production
+     * and behaves perfectly on a developer's machine.
+     *
+     * That is exactly what happened: the HUD's rename form went on sending
+     * "setName" after the handler was replaced by the claim flow, so renaming
+     * threw the player out of the city, and never once locally.
+     *
+     * Registering "*" replaces that behaviour. A message type we do not handle
+     * is now a log line and a dropped packet, which is what it should always
+     * have been: client/server drift is a bug to fix, never a reason to
+     * disconnect somebody mid-game.
+     */
+    this.onMessage("*", (client, type) => {
+      console.warn(`[room] ignoring unknown message "${String(type)}"`);
+      try {
+        client.send("actionFailed", {
+          type: String(type),
+          reason: "This client is out of date. Reload to get the current version.",
+        });
+      } catch {
+        /* the client is already gone; nothing to tell */
+      }
+    });
+
     this.onMessageSafe("input", (client, cmd: InputCommand) => {
       if (!cmd || typeof cmd.seq !== "number") return;
       const queue = this.queues.get(client.sessionId);

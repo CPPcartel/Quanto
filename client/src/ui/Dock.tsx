@@ -25,6 +25,8 @@ type DockPanel = "crew" | "market" | "residents" | "inbox" | "profile" | null;
 /** Lets the HUD open a conversation from a name clicked in chat. */
 export interface DockHandle {
   whisper(session: string, name: string): void;
+  /** Show the profile panel, which is the only place a name can be changed. */
+  openProfile(): void;
 }
 
 export const Dock = forwardRef<DockHandle>(function Dock(_props, ref) {
@@ -42,6 +44,9 @@ export const Dock = forwardRef<DockHandle>(function Dock(_props, ref) {
       world.dmOpen = null;
       setDraftTo({ session, name });
       setOpen("inbox");
+    },
+    openProfile() {
+      setOpen("profile");
     },
   }));
 
