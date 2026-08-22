@@ -346,10 +346,23 @@ export class Store {
     return {
       name: row.name,
       nameClaimed: row.name_claimed,
-      nameSetAt: row.name_set_at,
+      /**
+       * Timestamps are stringified here, not at the call site.
+       *
+       * The driver returns Date objects, and the query generic above claims
+       * they are strings, so the compiler was never going to catch the
+       * difference. It survives an HTTP response because res.json stringifies
+       * Dates on the way out, and does NOT survive a room message, because
+       * msgpack preserves the type — so the client received a Date, called
+       * .slice on it, and the whole interface came down.
+       *
+       * Converting at the boundary means every consumer gets the type the
+       * signature promises, whichever transport it travels over.
+       */
+      nameSetAt: row.name_set_at ? new Date(row.name_set_at).toISOString() : null,
       avatarTraits: row.avatar_traits,
       color: row.color,
-      createdAt: row.created_at,
+      createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
       walletCount: Number(row.wallets),
     };
   }

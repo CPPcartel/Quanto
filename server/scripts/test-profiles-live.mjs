@@ -123,6 +123,25 @@ check("marked claimed", profile.nameClaimed === true);
 check("with the cooldown", profile.renameReadyAt > Date.now());
 check("and no device id", !JSON.stringify(profile).includes("prof-alice"));
 
+/**
+ * Types, not just presence.
+ *
+ * The panel formats these, and a value of the wrong shape does not render
+ * wrongly, it throws and unmounts the interface. That is exactly what happened:
+ * the driver returns Date objects, msgpack preserves them where JSON would have
+ * stringified them, and the client called .slice on a Date. Asserting the
+ * contents alone would not have caught it.
+ */
+check("createdAt is a string, not a Date", typeof profile.createdAt === "string", typeof profile.createdAt);
+check("and parses as a date", !Number.isNaN(new Date(profile.createdAt).getTime()), String(profile.createdAt));
+check("renameReadyAt is a number", typeof profile.renameReadyAt === "number", typeof profile.renameReadyAt);
+check("nameClaimed is a boolean", typeof profile.nameClaimed === "boolean", typeof profile.nameClaimed);
+check("color is a string", typeof profile.color === "string", typeof profile.color);
+check(
+  "every field survives JSON, so no exotic types leak",
+  JSON.stringify(profile) === JSON.stringify(JSON.parse(JSON.stringify(profile))),
+);
+
 console.log("\n[8] appearance");
 alice.send("setAvatar", "120000");
 const looked = await next(alice, "setAvatarResult");

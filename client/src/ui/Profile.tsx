@@ -40,6 +40,24 @@ const COLOURS = [
   "#db7264", "#c77dff", "#8d8af2", "#ecedf3",
 ];
 
+/**
+ * Format a date that arrived over the wire, whatever shape it took.
+ *
+ * The server now sends an ISO string, but this used to call .slice on the
+ * value directly and the server used to send a Date, because msgpack
+ * preserves the type where JSON would have stringified it. The result was not
+ * a wrong date, it was the entire interface unmounting.
+ *
+ * Nothing arriving from a socket is worth crashing a panel over, so this
+ * accepts a string, a Date or a number and gives up quietly if it is none of
+ * them.
+ */
+function asDay(value: unknown): string {
+  if (!value) return "-";
+  const d = value instanceof Date ? value : new Date(value as string | number);
+  return Number.isNaN(d.getTime()) ? "-" : d.toISOString().slice(0, 10);
+}
+
 function relative(ms: number): string {
   const left = ms - Date.now();
   if (left <= 0) return "now";
@@ -140,7 +158,7 @@ export function ProfilePanelBody() {
           <div>
             <dt>Resident since</dt>
             <dd className="mono">
-              {profile?.createdAt ? profile.createdAt.slice(0, 10) : "-"}
+              {asDay(profile?.createdAt)}
             </dd>
           </div>
         </dl>
