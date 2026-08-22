@@ -1,190 +1,182 @@
 /**
  * $BLOCK — the coin mark.
  *
- * Drawn with the collection's own renderer rather than a lookalike, on the same
- * 32x32 grid and out of the same palette. That is the whole point: the coin is
- * not merchandise sitting next to the art, it is a piece of the art. Anyone who
- * has seen a Resident should recognise the hand that drew this.
+ * A coin has a face on it. Every real currency in history puts a person on the
+ * obverse, and the reason is not decoration: a portrait is the most recognisable
+ * shape a human eye can resolve, at any size, from any angle. A skyline is not.
  *
- * Two decisions carry the design.
+ * The first version put one inside the rim anyway, and it made a fine picture of
+ * a city and a weak coin — nothing on it was recognisably THIS project rather
+ * than any other crypto product with a chart in a circle. This one strikes an
+ * actual Resident into the metal, drawn by the collection's own renderer from a
+ * real token's traits. The coin and the collection are then the same object,
+ * which is the whole reason for having both.
  *
- * It is ROUND, and the collection is square. The silhouette has to survive at 48
- * pixels in a timeline where it sits beside a thousand other circles, so the
- * shape does the identifying before any detail is legible. A square coin would
- * read as "another pfp"; a round portrait would read as a mistake.
- *
- * The face is a SKYLINE, not a letter. "The skyline is the chart" is the entire
- * product thesis, so the mark states it rather than initialising it. Five towers
- * at five heights is also, conveniently, a bar chart — which is the joke and the
- * explanation at once.
+ * Token #2439 is on it: the AMD penthouse. Chosen for legibility rather than
+ * rarity, though it happens to be both. Teal hair against an amber visor is the
+ * highest-contrast pairing in the trait set, and it still reads at 48 pixels,
+ * which is where a logo is actually judged.
  *
  *   node brand/make-coin.mjs
  */
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Grid, encodePng, mix, shade, tintUp } from "../collection/src/png.mjs";
+import { drawPortrait } from "../collection/src/art.mjs";
+import { resolve, TRAIT_SLOTS, TRAIT_NAMES } from "../collection/src/traits.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "out");
 
-const GRID = 32;
-const C = (GRID - 1) / 2; // 15.5 — the coin's centre, between pixels
+/**
+ * 48, not 32.
+ *
+ * The portrait is drawn on a fixed 32 grid and has to sit inside a rim without
+ * being scaled, because resampling pixel art at a non-integer ratio is the one
+ * reliable way to make it look cheap. A 48 grid leaves exactly 8 pixels of rim
+ * on every side, which is enough to read as struck metal.
+ */
+const GRID = 48;
+const PORTRAIT = 32;
+const OFFSET = (GRID - PORTRAIT) / 2;
+const C = (GRID - 1) / 2;
 
-/** Straight from client/src/styles.css, via promo/src/theme.ts. */
-const PALETTE = {
-  ink: "#11131a",
-  inkSoft: "#171a24",
-  amber: "#e5a85c",
-  violet: "#8d8af2",
-  up: "#5fb37e",
-  cyan: "#3fc9d6",
-};
+/** From client/src/styles.css, via promo/src/theme.ts. */
+const AMBER = "#e5a85c";
+const INK = "#11131a";
 
-/** Distance from centre, for circle work. */
 const dist = (x, y) => Math.hypot(x - C, y - C);
 
 /**
  * The struck-metal look, in one function.
  *
- * A flat amber disc reads as a sticker. Light landing from the top-left and
- * falling away to the bottom-right is what makes a shape read as *metal*, and it
- * costs one dot product. The face is lit the opposite way — recessed, so it
- * catches light on its lower edge — which is what sells the idea that the middle
- * is stamped into the coin rather than printed on it.
+ * A flat disc reads as a sticker. Light landing from the top-left and falling
+ * away to the bottom-right is what makes a shape read as metal, and it costs one
+ * dot product.
  */
-function bevel(x, y, base, strength = 0.34) {
+function bevel(x, y, base, strength) {
   const nx = (x - C) / (GRID / 2);
   const ny = (y - C) / (GRID / 2);
-  // Light from the top-left.
   const lit = -(nx * 0.7071 + ny * 0.7071);
-  return lit >= 0
-    ? tintUp(base, lit * strength)
-    : shade(base, -lit * strength * 1.15);
+  return lit >= 0 ? tintUp(base, lit * strength) : shade(base, -lit * strength * 1.15);
 }
+
+/**
+ * Which token is struck into the coin.
+ *
+ * #66 is the NVDA penthouse: the flagship ticker, the first tower in the city,
+ * and a low enough id to be worth saying out loud. It carries no accessory,
+ * which matters more than it sounds — the halo and antenna float clear of the
+ * head, and a circular crop turns them into a stray bar hanging in the sky.
+ */
+const TOKEN_ID = 66;
+
+/**
+ * Read the traits from the token's own metadata rather than transcribing them.
+ *
+ * Copying six indices by hand is a silent way to end up with a coin that shows a
+ * face nobody owns. Reading the published attributes means the mark is provably
+ * this token, and it stays right if the collection is ever regenerated.
+ */
+function traitsOf(id) {
+  const file = join(HERE, "..", "collection", "out", "metadata", `${id}.json`);
+  const meta = JSON.parse(readFileSync(file, "utf8"));
+  const named = Object.fromEntries(
+    (meta.attributes ?? []).map((a) => [String(a.trait_type).toLowerCase(), String(a.value)])
+  );
+
+  const indices = {};
+  for (const slot of TRAIT_SLOTS) {
+    const wanted = named[slot];
+    const i = TRAIT_NAMES[slot].indexOf(wanted);
+    if (i < 0) throw new Error(`token ${id}: unknown ${slot} "${wanted}"`);
+    indices[slot] = i;
+  }
+  return { indices, tower: named.tower ?? "", tier: named.tier ?? "" };
+}
+
+const TOKEN = { id: TOKEN_ID, ...traitsOf(TOKEN_ID) };
 
 function drawCoin() {
   const g = new Grid(GRID);
 
+  // The encoder is RGB with no alpha, so the corners take the game's own
+  // background. Every surface this lands on looks like that anyway.
+  g.clear(INK);
+
+  const R_OUTER = 23.4;
+  const R_INNER = 20.6;
+  const R_FIELD = 19.7;
+
+  const traits = resolve(TOKEN.indices);
   /**
-   * Transparent is not available — the encoder is RGB, no alpha. So the corners
-   * are the game's own background, which is also what every surface this mark
-   * lands on looks like. A PNG with a matching ground beats a PNG with a halo.
+   * Drawn as a resident, worn by a penthouse.
+   *
+   * The tier decides two things in the renderer: the backdrop and a frame. The
+   * frame is a gold rectangle around the edge of the portrait, which is exactly
+   * where this coin already has a rim — two frames fighting for the same
+   * millimetre, and the square one loses badly against a circle. Requesting the
+   * plain backdrop drops it. The traits are still #2439's, so the face on the
+   * coin is genuinely that token's.
    */
-  g.clear(PALETTE.ink);
+  const portrait = drawPortrait(traits, "resident", null, (0xca11ed + TOKEN.id) >>> 0);
 
-  const R_OUTER = 15.4;
-  const R_RIM = 13.5;
-  const R_FACE = 12.6;
-
-  // --- the disc, rim first -------------------------------------------------
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
       const d = dist(x, y);
       if (d > R_OUTER) continue;
 
-      if (d > R_RIM) {
-        // Outer rim: the brightest metal, and the edge that defines the circle.
-        g.set(x, y, bevel(x, y, PALETTE.amber, 0.42));
-      } else if (d > R_FACE) {
-        // A darker step between rim and face, so the two read as planes rather
-        // than one gradient.
-        g.set(x, y, bevel(x, y, shade(PALETTE.amber, 0.34), 0.3));
+      if (d > R_INNER) {
+        g.set(x, y, bevel(x, y, AMBER, 0.44));
+      } else if (d > R_FIELD) {
+        // A dark step between rim and portrait, so the two read as separate
+        // planes rather than one gradient. Without it the amber bleeds into the
+        // artwork and both lose their edge.
+        g.set(x, y, bevel(x, y, shade(AMBER, 0.68), 0.25));
       } else {
-        // The recessed face. Deep, so the towers have something to glow against.
-        g.set(x, y, bevel(x, y, mix(PALETTE.ink, PALETTE.amber, 0.08), -0.22));
+        const px = x - OFFSET;
+        const py = y - OFFSET;
+        if (px >= 0 && py >= 0 && px < PORTRAIT && py < PORTRAIT) {
+          const [r, gg, b] = portrait.get(px, py);
+          const hex = `#${[r, gg, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+          /**
+           * Pulled a few percent toward the coin's ground.
+           *
+           * The portrait was drawn to be looked at on its own at 1024px. Inside
+           * a rim at 48 it competes with the metal, and darkening it slightly
+           * lets the amber stay the brightest thing on the mark, which is what
+           * makes it read as a coin rather than a sticker of a face.
+           */
+          g.set(x, y, mix(hex, INK, 0.12));
+        } else {
+          // Inside the field but outside the portrait's square: the corners.
+          g.set(x, y, mix(INK, AMBER, 0.1));
+        }
       }
     }
   }
 
-  drawSkyline(g, R_FACE);
-  drawSheen(g, R_OUTER);
+  drawSheen(g, R_OUTER, R_INNER);
   return g;
 }
 
-/**
- * A city, not a face.
- *
- * The first version put four small towers and two sky specks in the middle of a
- * large dark field, and at thumbnail size it read unmistakably as a face — the
- * specks became eyes and the ground line became a mouth. Pareidolia is not a
- * matter of taste; once seen it cannot be unseen, and a logo that reads as a
- * smiley is finished as a logo.
- *
- * The fix is density and width. Towers now span nearly the full chord and are
- * chunky enough to survive 48 pixels, so the eye resolves "skyline" before it
- * can assemble a face. The sky specks are gone for the same reason: any two
- * marks above a horizontal line become eyes.
- *
- * Heights are hand-set and deliberately irregular, peaking right of centre. A
- * symmetrical skyline reads as a crown; an irregular one reads as a city.
- */
-function drawSkyline(g, rFace) {
-  const GROUND = 27;
-  const towers = [
-    { x: 5, w: 2, h: 6, tone: 0.55 },
-    { x: 7, w: 3, h: 10, tone: 0.9 },
-    { x: 10, w: 2, h: 7, tone: 0.4 },
-    { x: 12, w: 3, h: 14, tone: 0.75 },
-    { x: 15, w: 2, h: 9, tone: 0.5 },
-    { x: 17, w: 3, h: 17, hot: true },
-    { x: 20, w: 2, h: 11, tone: 0.85 },
-    { x: 22, w: 3, h: 8, tone: 0.45 },
-    { x: 25, w: 2, h: 5, tone: 0.65 },
-  ];
-
-  for (const t of towers) {
-    for (let i = 0; i < t.w; i++) {
-      for (let j = 0; j < t.h; j++) {
-        const x = t.x + i;
-        const y = GROUND - j;
-        // Clip to the recessed face; a tower crossing the rim breaks the coin.
-        if (dist(x, y) > rFace - 0.4) continue;
-
-        const top = j === t.h - 1;
-        /**
-         * Amber towers on a dark sky, not cool ones. Amber is the game's hero
-         * colour and the currency's colour, so the mark should be warm at a
-         * glance — a cool coin would belong to a different product.
-         */
-        /**
-         * `tone` varies each tower's brightness. A single amber for every
-         * building collapsed into one brown mass; staggering them reads as
-         * depth, which is what a skyline actually looks like.
-         */
-        let colour = t.hot
-          ? (top ? "#fff3dd" : mix(PALETTE.amber, "#ffffff", 0.42))
-          : mix(shade(PALETTE.amber, 0.52), PALETTE.amber, t.tone ?? 0.6);
-        if (!t.hot && top) colour = tintUp(colour, 0.22);
-
-        // Left column catches the light, exactly as the rim does.
-        g.set(x, y, i === 0 ? tintUp(colour, 0.1) : colour);
-      }
-    }
-  }
-
-  // Fill everything below the skyline, so the city sits on solid ground rather
-  // than floating in the middle of the coin.
-  for (let y = GROUND + 1; y < 32; y++) {
-    for (let x = 0; x < 32; x++) {
-      if (dist(x, y) <= rFace - 0.4) {
-        g.set(x, y, mix(PALETTE.ink, PALETTE.amber, 0.42));
-      }
-    }
-  }
-}
-
-/** A two-pixel highlight on the upper-left rim. Cheap, and it sells the metal. */
-function drawSheen(g, rOuter) {
-  const spots = [
-    [9, 5],
-    [10, 4],
-    [12, 3],
-    [13, 3],
-  ];
-  for (const [x, y] of spots) {
-    if (dist(x, y) <= rOuter && dist(x, y) > 12.4) {
-      g.set(x, y, "#fff1d8");
+/** A highlight on the upper-left rim. Cheap, and it sells the metal. */
+function drawSheen(g, rOuter, rInner) {
+  for (let y = 0; y < GRID; y++) {
+    for (let x = 0; x < GRID; x++) {
+      const d = dist(x, y);
+      if (d > rOuter || d < rInner) continue;
+      const nx = (x - C) / (GRID / 2);
+      const ny = (y - C) / (GRID / 2);
+      /**
+       * A narrow band, not a bright region.
+       *
+       * Lighting the whole upper-left quadrant made the rim look out of focus.
+       * Metal catches light in a line; widening that line reads as blur.
+       */
+      const lit = -(nx * 0.7071 + ny * 0.7071);
+      if (lit > 0.80 && lit < 0.94) g.set(x, y, "#fff3de");
     }
   }
 }
@@ -195,29 +187,23 @@ mkdirSync(OUT, { recursive: true });
 const coin = drawCoin();
 
 /**
- * Every size anything actually asks for.
- *
- * Scales are exact multiples of 32 so nearest-neighbour stays crisp — a
- * non-multiple resamples and turns hard pixel edges into mush, which is the one
- * way to make pixel art look cheap.
+ * Scales are exact multiples of the grid so nearest-neighbour stays crisp. A
+ * non-multiple resamples and turns hard pixel edges into mush.
  */
 const SIZES = [
-  [1024, 32], // OpenSea / token registries
-  [512, 16], // general
-  [400, null], // X avatar — see below
-  [256, 8],
-  [128, 4],
-  [64, 2],
+  [1152, 24], // OpenSea, token registries
+  [960, 20],
+  [576, 12], // X avatar; the platform downscales cleanly from here
+  [384, 8],
+  [192, 4],
+  [96, 2], // smallest legible
 ];
 
 for (const [px, scale] of SIZES) {
-  if (scale === null) continue;
   writeFileSync(join(OUT, `block-coin-${px}.png`), encodePng(coin, scale));
 }
 
 console.log(`Coin written to ${OUT}`);
-console.log("  block-coin-1024.png   OpenSea, token lists");
-console.log("  block-coin-512.png    general purpose");
-console.log("  block-coin-256.png    docs, favicons");
-console.log("  block-coin-128.png    inline UI");
-console.log("  block-coin-64.png     smallest legible size");
+console.log(`  Resident #${TOKEN.id} — ${TOKEN.tower} ${TOKEN.tier} — struck into the face`);
+console.log("  " + TRAIT_SLOTS.map((s) => `${s}=${TRAIT_NAMES[s][TOKEN.indices[s]]}`).join(" "));
+for (const [px] of SIZES) console.log(`  block-coin-${px}.png`);

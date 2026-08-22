@@ -56,14 +56,14 @@ is people asking whether it is a yield product.
 | **Handle** | `@quanto` if free, else `@quantocity`, `@playquanto`, `@quantogg` |
 | **Location** | `The skyline is the chart` — X does not validate it, and it is free real estate |
 | **Link** | `quanto.gg` (or the live Vercel URL until DNS is set) |
-| **Profile picture** | `brand/out/block-coin-512.png` — the $BLOCK coin |
+| **Profile picture** | `brand/out/block-coin-576.png`, the $BLOCK coin |
 | **Header** | `brand/out/x-cover-1500x500.png` |
 
-**On the avatar:** the coin is round, high-contrast and legible at 48px, which is
-where the decision actually gets made. A Resident portrait would also work and is
-arguably warmer — but every NFT project on X uses a character pfp, and a coin
-that is obviously drawn by the same hand reads as more considered than a
-character that reads as one of ten thousand.
+**On the avatar:** the coin now carries Resident #66, the NVDA penthouse, drawn
+by the collection's own renderer from that token's published traits. It is a
+coin and a character at once, which is what a currency has always done: put a
+face on the obverse. Round and high-contrast, so it holds at 48px, which is
+where the decision actually gets made.
 
 ---
 
