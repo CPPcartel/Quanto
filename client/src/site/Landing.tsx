@@ -305,9 +305,9 @@ export function Landing() {
       <Band time="19:00" tag="questions" title="The things people ask first." alt>
         <div className="faq">
           <Faq q="Do I need a wallet?">
-            No. The whole game is playable as a guest and your progress saves against your
-            browser. Connecting a wallet is optional, and only matters when you want ownership to
-            be real and portable between devices.
+            No. An email is enough, and one is created for you in seconds. A wallet only
+            matters if you hold a Quanto Residents NFT and want the city to know about it,
+            which unlocks holder traits and the door to The Vault.
           </Faq>
           <Faq q="Does it cost anything?">
             No. Playing is free, and reading prices from the chain costs nothing, no
@@ -344,8 +344,8 @@ export function Landing() {
             Go and stand in it.
           </h2>
           <p className="muted">
-            No signup, no download, no wallet. Connect one later if you want the floors to be
-            really yours.
+            No download, no wallet, no cost. Sign in with an email, pick a name, and you
+            are standing in it.
           </p>
           <button className="primary big" onClick={() => navigate("/play")}>
             Enter the city

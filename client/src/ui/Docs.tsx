@@ -276,15 +276,15 @@ export function Docs({ onClose }: { onClose: () => void }) {
           {tab === "wallet" && (
             <>
               <p className="lede">
-                You can play the entire game as a guest. Connecting a wallet is optional, and
+                Signing in takes an email. Connecting a wallet is separate and optional, and
                 only matters when you want ownership to be real.
               </p>
 
               <h3>What connecting does</h3>
               <p>
                 You sign one message proving the wallet is yours. It <b>costs no gas</b> and{" "}
-                <b>authorises no transactions</b>. Your guest progress carries over, and if
-                that wallet has played from another browser, its save is restored instead.
+                <b>authorises no transactions</b>. Nothing about your progress changes: your
+                account keeps your floors and balance, and the wallet only says what you hold.
               </p>
 
               <h3>What's on the blockchain, and what isn't</h3>

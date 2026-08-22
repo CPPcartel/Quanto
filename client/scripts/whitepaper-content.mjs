@@ -225,7 +225,13 @@ export const SECTIONS = [
   { type: "h3", text: "6.4 Identity" },
   {
     type: "p",
-    text: "Guest identity is a client-generated browser identifier. This is explicitly not authentication and is not treated as such; it exists so that casual play persists across reloads. Wallet sign-in provides real identity via signature verification against a single-use, short-lived server-issued nonce. Signing proves key custody, and authorises no transaction.",
+    text: "Identity and holdings are separate systems with different lifetimes, and conflating them is a mistake with teeth. Identity is a verified account: the player authenticates with an email, a social provider or a wallet, and the server verifies the resulting token's signature before admitting the connection. Unauthenticated joins are refused outright, so there is no anonymous path into the world. That account is durable, survives devices, and decides which save loads. Holdings are a set of wallet addresses proved to the server by signature against a single-use, short-lived nonce. Signing proves key custody and authorises no transaction. A wallet belongs to exactly one account, enforced in the schema rather than by convention, and entitlements are resolved across every address an account has proved, because players routinely hold tokens in one wallet and play from another. Checking a single address refuses a genuine holder, which is the failure this design exists to prevent.",
+  },
+
+  { type: "h3", text: "6.5 Names" },
+  {
+    type: "p",
+    text: "Every account claims a username before entering the world, checked for availability as it is typed and unique on a case-insensitive index. Case insensitivity is a security property rather than a nicety: two accounts differing only in capitalisation are indistinguishable at a glance in chat, which is precisely the confusion a username exists to prevent. Names that impersonate operators, and the placeholder shape the server assigns before a player chooses, are reserved. Changes carry a cooldown, because a name identifies a player on standings that are frozen and published, and unrestricted renaming would let one player assume another's identity at the moment it mattered most.",
   },
 
   { type: "h2", text: "7 · Scaling" },
@@ -325,7 +331,7 @@ export const SECTIONS = [
   },
   {
     type: "p",
-    text: "Wallet connection is positioned as an upgrade rather than a gate, offered after the player has something worth making portable. Connecting migrates existing guest progress rather than resetting it, and restores prior progress if that wallet has played elsewhere.",
+    text: "Wallet connection is positioned as an entitlement check rather than a sign-in, offered when a player wants the world to recognise what they hold. Connecting attaches an address and moves no progress whatsoever. An earlier design adopted whichever save that wallet had played on, which was coherent while the wallet was the identity and becomes a second identity system competing with the first once accounts exist: signing in as yourself and connecting a wallet that had played elsewhere would land another player's balance and floors on your account.",
   },
 
   { type: "h2", text: "11 · Social design" },

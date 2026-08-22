@@ -68,7 +68,7 @@ export function WalletPanel() {
               <>
                 <p className="dim tiny">
                   You'll sign one message to prove the wallet is yours. It costs no gas and
-                  approves no transactions. Your guest progress carries over.
+                  approves no transactions, and nothing about your progress changes.
                 </p>
                 <button className="connect" disabled={busy} onClick={connect}>
                   {busy ? "Check your wallet…" : "Sign in"}

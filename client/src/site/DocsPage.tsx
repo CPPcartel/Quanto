@@ -107,7 +107,7 @@ function useSections(): Section[] {
       body: (
         <>
           <p className="doc-lede">
-            Quanto runs in the browser. No download, no signup, and no wallet, click{" "}
+            Quanto runs in the browser. No download and no wallet needed, click{" "}
             <a {...linkProps("/play")}>Enter the city</a> and you're in.
           </p>
           <p>
@@ -144,6 +144,86 @@ function useSections(): Section[] {
             <li><b>Bottom right</b>: the inspector for whichever tower you're near or have clicked.</li>
             <li><b>Bottom centre</b>: the leaderboard of the brightest towers.</li>
           </ul>
+        </>
+      ),
+    },
+
+    {
+      id: "profile",
+      title: "Your name and look",
+      body: (
+        <>
+          <p className="doc-lede">
+            Every resident picks a name before they enter. It is what the city calls you above
+            your head, in chat, on the leaderboard, and on any tower you come to own.
+          </p>
+
+          <h3>Names</h3>
+          <ul className="doc-list">
+            <li>3 to 16 characters. Letters, numbers, hyphens and underscores.</li>
+            <li>Unique across the whole city, and capitalisation does not make a new one. If someone holds <i>skyline</i>, nobody else can be <i>Skyline</i>.</li>
+            <li>Names that impersonate staff or the game are reserved, as is the Trader#### shape the server hands out before you pick.</li>
+            <li>You can change it once a week. The profile panel tells you when you next can.</li>
+          </ul>
+
+          <Callout tone="note" title="Why the cooldown?">
+            A name identifies you on a leaderboard. Free renaming would let anyone take on
+            somebody else's identity the moment it mattered, and would make the standings
+            impossible to follow week to week.
+          </Callout>
+
+          <h3>Appearance</h3>
+          <p>
+            The profile tab in the dock changes your colour and all six trait slots: jacket,
+            collar, hair, visor, skin and accessory. Everything you set survives a reload and
+            follows your account to any device.
+          </p>
+          <p>
+            A handful of options are reserved for <b>Quanto Residents</b> holders. They stay
+            visible and locked rather than hidden, so you can see what holding one gets you. If
+            you hold a Resident, its own traits unlock alongside them, and clearing your
+            customisation puts your token's look back.
+          </p>
+        </>
+      ),
+    },
+
+    {
+      id: "seasons",
+      title: "Seasons",
+      body: (
+        <>
+          <p className="doc-lede">
+            The city runs in weekly seasons, Monday to Monday UTC. Some leaderboards reset with
+            them and some do not.
+          </p>
+
+          <h3>What resets</h3>
+          <ul className="doc-list">
+            <li><b>This week</b> and <b>Storm runners</b> count only the current season.</li>
+            <li><b>Most floors</b>, <b>Richest</b> and <b>Most earned</b> are all-time and carry across.</li>
+          </ul>
+
+          <h3>What counts as earning</h3>
+          <p>
+            Shift payouts, floor sales, storm shards, sign traffic and landlord royalties. The
+            opening grant every account starts with does not, because being given something is
+            not earning it, and counting it would put a brand new account above somebody who
+            had played all week.
+          </p>
+
+          <h3>Closing standings</h3>
+          <p>
+            When a season ends its standings are frozen at that moment and written once. They
+            are never recalculated afterwards, and they are public: anyone can read the final
+            table for any past season, which is the point. A result nobody can check
+            independently is a result nobody has a reason to trust.
+          </p>
+
+          <Callout tone="note" title="Is there a prize?">
+            Not yet. Seasons currently decide standing and nothing else. If that ever changes it
+            will be announced properly rather than appearing quietly in a patch.
+          </Callout>
         </>
       ),
     },
@@ -490,8 +570,8 @@ function useSections(): Section[] {
       body: (
         <>
           <p className="doc-lede">
-            Optional. The whole game is playable as a guest, and your progress saves against your
-            browser.
+            Optional, and separate from signing in. Your account is who you are; a wallet is
+            what you hold.
           </p>
 
           <h3>What connecting actually does</h3>
@@ -504,9 +584,10 @@ function useSections(): Section[] {
 
           <h3>What happens to your progress</h3>
           <ul className="doc-list">
-            <li>Guest progress is carried over to the wallet, not reset.</li>
-            <li>If that wallet has played from another browser, its existing save is restored instead.</li>
-            <li>Your floors, balance and shards follow the wallet from then on.</li>
+            <li>Nothing. Connecting a wallet attaches it and changes no progress.</li>
+            <li>Your floors, balance and name stay with your account, on any device.</li>
+            <li>Holdings are read across every wallet you connect, so a cold wallet counts.</li>
+            <li>A wallet belongs to one account. It cannot be connected to a second.</li>
           </ul>
 
           <Callout tone="note" title="Don't have a wallet?">
