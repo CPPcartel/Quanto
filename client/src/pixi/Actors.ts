@@ -387,8 +387,20 @@ export { lerp };
  * looking exactly as they did before the collection existed — the NFT adds an
  * appearance, it does not take one away.
  */
-function lookOf(tier: string, traits: string, color: string): string {
-  return tier && tier !== "none" && traits ? traits : color;
+function lookOf(_tier: string, traits: string, color: string): string {
+  /**
+   * A chosen look wins; an empty one falls back to colour.
+   *
+   * This used to require a tier, so traits were ignored for anybody without an
+   * NFT and the appearance customiser silently did nothing for exactly the
+   * players most likely to open it.
+   *
+   * Tier is no longer consulted at all. Which options a player is ENTITLED to
+   * is decided server-side in sanitiseTraits, and re-deciding it here would
+   * mean two places can disagree about what somebody is allowed to wear. The
+   * renderer's only job is to draw what it was given.
+   */
+  return traits ? traits : color;
 }
 
 /** Badges are short: they sit above a nameplate that is already busy. */

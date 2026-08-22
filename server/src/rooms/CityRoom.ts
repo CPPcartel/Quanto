@@ -10,7 +10,7 @@ import {
   Listing,
 } from "./schema/CityState.js";
 import { checkUsername, renameAvailableAt, RENAME_COOLDOWN_MS } from "../config/username.js";
-import { sanitiseTraits } from "../config/traits.js";
+import { sanitiseTraits, DEFAULT_TRAIT_CODE } from "../config/traits.js";
 import { DISTRICTS, TICKERS, layoutFor } from "../config/tickers.js";
 import { parkLots, parkAt, CLUB } from "../config/parks.js";
 import type { ChainlinkPoller } from "../oracle/ChainlinkPoller.js";
@@ -338,7 +338,9 @@ export class CityRoom extends Room<CityState> {
         return;
       }
 
-      const traits = sanitiseTraits(raw, isHolder, player.traits);
+      // The fallback needs a real code to fall back TO; an empty current look
+      // would sanitise every slot down to zero rather than to the default.
+      const traits = sanitiseTraits(raw, isHolder, player.traits || DEFAULT_TRAIT_CODE);
       await this.store.setAvatarTraits(deviceId, traits);
       player.traits = traits;
       client.send("setAvatarResult", { ok: true, traits });
@@ -1055,7 +1057,16 @@ export class CityRoom extends Room<CityState> {
       const player = this.state.players.get(sessionId);
       if (player) {
         player.tier = holding.tier;
-        player.traits = profile?.avatarTraits ?? holding.traits;
+        /**
+       * A chosen look first, then the token's, then nothing.
+       *
+       * "Nothing" is the important branch. NO_HOLDING carries the default trait
+       * code, so assigning it unconditionally gave every player without an NFT
+       * the same appearance and threw away the colour that distinguishes them.
+       * An empty string tells the renderer to draw them by colour instead.
+       */
+        player.traits =
+          profile?.avatarTraits ?? (holding.tier === "none" ? "" : holding.traits);
         player.penthouse = holding.tower ?? "";
       }
       // Persist even if they left mid-flight: the penthouse timestamp is what

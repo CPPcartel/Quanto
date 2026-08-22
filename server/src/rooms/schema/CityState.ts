@@ -41,7 +41,15 @@ export class Player extends Schema {
    */
   @type("string") tier = "none";
   /** Six base36 digits driving the avatar; see config/traits.ts. */
-  @type("string") traits = "000010";
+  /**
+   * The look this player has chosen or been granted, or "" for none.
+   *
+   * Empty is meaningful rather than missing. It tells the renderer to fall back
+   * to the player's colour, which is how everybody without a customised
+   * appearance is told apart from everybody else. Defaulting this to a real
+   * trait code would draw every uncustomised player identically.
+   */
+  @type("string") traits = "";
   /** Penthouse only: the tower whose top floor this player holds. */
   @type("string") penthouse = "";
 

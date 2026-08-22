@@ -161,6 +161,38 @@ alice.send("setAvatar", null);
 const reset = await next(alice, "setAvatarResult");
 check("clearing works", reset.ok === true, JSON.stringify(reset));
 
+/**
+ * What an uncustomised player actually looks like.
+ *
+ * The renderer draws a player from their traits when they have any and from
+ * their colour when they do not, so an empty trait string is a meaningful
+ * value rather than a missing one. Filling it with the default code would
+ * render every uncustomised player identically and throw away the colour that
+ * tells two strangers apart, which is why this asserts empty and not a code.
+ *
+ * The bug this pins: the renderer used to ignore traits entirely unless the
+ * player held an NFT, so the appearance customiser did nothing at all for the
+ * players most likely to open it.
+ */
+console.log("\n[8b] an uncustomised player has no look, only a colour");
+alice.send("setAvatar", null);
+await next(alice, "setAvatarResult");
+await sleep(1200);
+check(
+  "traits are empty, not a default code",
+  (aliceSelf()?.traits ?? "x") === "",
+  JSON.stringify(aliceSelf()?.traits),
+);
+
+// And a chosen one is published for every other client to draw.
+alice.send("setAvatar", "210000");
+await next(alice, "setAvatarResult");
+check(
+  "a chosen look reaches other players",
+  await waitUntil(() => bobSeesAlice()?.traits === "210000"),
+  bobSeesAlice()?.traits,
+);
+
 console.log("\n[9] colour");
 alice.send("setColor", "#22e8ff");
 check("it replicates", await waitUntil(() => aliceSelf()?.color === "#22e8ff"), aliceSelf()?.color);

@@ -216,7 +216,14 @@ export const world = {
   localEmote: "",
   /** The local player's NFT tier and appearance. */
   localTier: "none" as Tier,
-  localTraits: "000010",
+  /**
+   * The look the local player has chosen, or "" for none.
+   *
+   * Empty is meaningful rather than missing: it tells the renderer to draw them
+   * by colour, which is how every player without a customised appearance is
+   * told apart from every other.
+   */
+  localTraits: "",
   /** Penthouse holders only: the tower whose top floor they hold. */
   localPenthouse: "",
 
@@ -419,7 +426,7 @@ export function resetWorld() {
   world.localNameClaimed = false;
   world.resting = false;
   world.localTier = "none";
-  world.localTraits = "000010";
+  world.localTraits = "";
   world.localPenthouse = "";
   world.clubEvent = "";
   world.clubEndsAt = 0;

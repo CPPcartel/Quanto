@@ -182,7 +182,10 @@ export async function connect() {
           world.localColor = p.color;
           world.localEmote = p.emote ?? "";
           world.localTier = (p.tier ?? "none") as any;
-          world.localTraits = p.traits || "000010";
+          // NOT coerced to a default: an empty string means "no chosen
+          // look", and replacing it with a code would draw every uncustomised
+          // player identically.
+          world.localTraits = p.traits ?? "";
           world.localPenthouse = p.penthouse ?? "";
           syncWallet(p);
         });
