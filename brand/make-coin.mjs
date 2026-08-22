@@ -12,10 +12,9 @@
  * real token's traits. The coin and the collection are then the same object,
  * which is the whole reason for having both.
  *
- * Token #2439 is on it: the AMD penthouse. Chosen for legibility rather than
- * rarity, though it happens to be both. Teal hair against an amber visor is the
- * highest-contrast pairing in the trait set, and it still reads at 48 pixels,
- * which is where a logo is actually judged.
+ * Token #2971 is on it: the TSM penthouse. Chosen for legibility rather than
+ * rarity, and legibility here means one thing above all others, which is that
+ * the face separates from the sky behind it.
  *
  *   node brand/make-coin.mjs
  */
@@ -65,12 +64,22 @@ function bevel(x, y, base, strength) {
 /**
  * Which token is struck into the coin.
  *
- * #66 is the NVDA penthouse: the flagship ticker, the first tower in the city,
- * and a low enough id to be worth saying out loud. It carries no accessory,
- * which matters more than it sounds — the halo and antenna float clear of the
- * head, and a circular crop turns them into a stray bar hanging in the sky.
+ * #2971 is the TSM penthouse, and it is here for its skin tone. The first pick
+ * was #66, the NVDA penthouse, which is a better story: flagship ticker, first
+ * tower in the city, a low id worth saying out loud. It also pairs the darkest
+ * skin in the trait set with the darkest jacket, and inside a small dark circle
+ * the figure simply did not separate from the sky behind it.
+ *
+ * Brightening the portrait was tried first and does not work, because lifting
+ * every pixel raises the backdrop exactly as much as the face and the contrast
+ * between them is unchanged; all it produced was a washed-out grey coin. What
+ * actually reads is a light face on a dark ground, which is why this one is
+ * Porcelain over Midnight with a cyan visor.
+ *
+ * Also chosen for having a Cap rather than a Halo or Antenna. Those float clear
+ * of the head, and a circular crop turns them into a stray bar in the sky.
  */
-const TOKEN_ID = 66;
+const TOKEN_ID = 2971;
 
 /**
  * Read the traits from the token's own metadata rather than transcribing them.
@@ -148,7 +157,7 @@ function drawCoin() {
            * lets the amber stay the brightest thing on the mark, which is what
            * makes it read as a coin rather than a sticker of a face.
            */
-          g.set(x, y, mix(hex, INK, 0.12));
+          g.set(x, y, tintUp(hex, 0.06));
         } else {
           // Inside the field but outside the portrait's square: the corners.
           g.set(x, y, mix(INK, AMBER, 0.1));
