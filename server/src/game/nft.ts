@@ -287,6 +287,25 @@ export class NftService {
     }
 
     const fetched = await this.fetchMetadata(tokenId);
+
+    /**
+     * A failed read is answered, not remembered.
+     *
+     * Metadata is immutable after reveal, which is what makes snapshotting it
+     * safe. A token whose metadata could not be read yet has no such guarantee:
+     * before a reveal every tokenURI is empty, and writing the fallback would
+     * pin every token in the collection to Resident with default traits at
+     * exactly the moment the real answer does not exist yet. The reveal would
+     * then change nothing, because this method would never ask again.
+     *
+     * So the fallback is returned to the caller and thrown away. The holder
+     * looks like a plain Resident until the metadata exists, and the next read
+     * after that picks up the truth.
+     */
+    if (!fetched) {
+      return { tier: "resident", traits: DEFAULT_TRAIT_CODE, tower: null, tokenId };
+    }
+
     await this.db
       .query(
         `INSERT INTO nft_tokens (token_id, tier, traits, tower)
@@ -300,7 +319,8 @@ export class NftService {
     return fetched;
   }
 
-  private async fetchMetadata(tokenId: string): Promise<Holding> {
+  /** Returns null when the metadata cannot be read, so it is never cached. */
+  private async fetchMetadata(tokenId: string): Promise<Holding | null> {
     try {
       const uri = await this.client.readContract({
         address: getAddress(this.address),
@@ -308,6 +328,13 @@ export class NftService {
         functionName: "tokenURI",
         args: [BigInt(tokenId)],
       });
+
+      /**
+       * An empty tokenURI is a pre-reveal collection, not a broken one. Caught
+       * here rather than left to fetch, whose error for an empty string is
+       * "Failed to parse URL from" and says nothing about the actual cause.
+       */
+      if (!uri || uri.trim() === "") return null;
 
       const res = await fetch(resolveUri(uri), { signal: AbortSignal.timeout(8000) });
       if (!res.ok) throw new Error(`metadata ${res.status}`);
@@ -322,9 +349,9 @@ export class NftService {
       };
     } catch (err) {
       console.warn(`[nft] metadata for #${tokenId} unavailable:`, (err as Error)?.message);
-      // A token we own but cannot describe is still a Resident. Not stored, so
-      // the next attempt retries rather than freezing the fallback in place.
-      return { tier: "resident", traits: DEFAULT_TRAIT_CODE, tower: null, tokenId };
+      // The caller decides what an unreadable token looks like. Returning null
+      // rather than a guess is what stops the guess being written down.
+      return null;
     }
   }
 
