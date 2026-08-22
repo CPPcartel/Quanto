@@ -60,12 +60,23 @@ This is worth doing first. The URL is written into metadata that outlives any
 redeploy, and a listing linking to a dead host is the kind of thing nobody
 notices until somebody is deciding whether to buy.
 
-**Images are referenced by filename** (`1.png`, `66.png`), matching the files in
-`out/images/`. If the importer wants full URLs instead, they need a host and the
-column has to be rewritten to match. Upload the images first and check which
-form it expects before importing 3,338 rows.
+**Images go in the `file_name` column as plain filenames** (`1.png`, `66.png`),
+matching `out/images/`. The column is named file_name rather than image for that
+reason: the importer pairs each row with an uploaded file by name, so the images
+have to be uploaded alongside the CSV and the names have to match exactly.
 
-**Column names may need renaming.** Different importers expect different
-headers for the same data. The shape here is the common one: identity columns
-first, then one column per trait. If yours wants `attributes[Jacket]` or similar,
-rename the header row rather than regenerating.
+**The header matches the importer's documented format**, which is not the same
+as a readable one:
+
+```
+tokenID,name,description,file_name,external_url,attributes[Jacket],...
+```
+
+Not `token_id`, not `image`, and every trait wrapped in `attributes[...]`. An
+importer matches on literal column names, so the first version was rejected for
+reading well rather than reading correctly.
+
+**`attributes[Tower]` is blank on 3,300 rows** and carries a value on the 38
+penthouses. An empty cell is how a token says it does not have that trait.
+Worth confirming on a small test import that the importer agrees, rather than
+discovering it 3,338 rows in.

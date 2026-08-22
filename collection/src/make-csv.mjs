@@ -30,10 +30,28 @@ const EXTERNAL_URL = process.argv[2] ?? "https://quanto.fun";
  *
  * Fixed rather than discovered, so every row has the same shape and the two
  * partial traits do not shuffle columns around. Tower is only on the 38
- * penthouses and is blank everywhere else, which is what a marketplace expects
- * for a trait a token does not carry.
+ * penthouses and is blank everywhere else, which is how a marketplace reads
+ * "this token does not carry that trait".
  */
 const TRAITS = ["Jacket", "Collar", "Hair", "Visor", "Skin", "Accessory", "Tier", "Tower"];
+
+/**
+ * The exact header shape the importer expects.
+ *
+ * Not a matter of taste. The first version used token_id, image, and bare trait
+ * names, which reads perfectly well and is rejected, because an importer
+ * matches on literal column names: tokenID, file_name, and every trait wrapped
+ * as attributes[Name]. Written out rather than derived so the difference is
+ * visible to whoever reads this next.
+ */
+const COLUMNS = [
+  "tokenID",
+  "name",
+  "description",
+  "file_name",
+  "external_url",
+  ...TRAITS.map((t) => `attributes[${t}]`),
+];
 
 const BASE =
   "A resident of Quanto, a live isometric city on Robinhood Chain where every " +
@@ -79,8 +97,7 @@ const ids = readdirSync(META)
   .map((f) => Number(f.replace(".json", "")))
   .sort((a, b) => a - b);
 
-const header = ["token_id", "name", "description", "image", "external_url", ...TRAITS];
-const rows = [header.join(",")];
+const rows = [COLUMNS.join(",")];
 
 let penthouses = 0;
 let landlords = 0;
@@ -114,5 +131,5 @@ writeFileSync(OUT, rows.join("\n") + "\n", "utf8");
 console.log(`${OUT}`);
 console.log(`  ${ids.length} tokens, ids ${ids[0]} to ${ids[ids.length - 1]}`);
 console.log(`  ${penthouses} penthouses, ${landlords} landlords`);
-console.log(`  columns: ${header.join(", ")}`);
+console.log(`  columns: ${COLUMNS.join(", ")}`);
 console.log(`  external_url: ${EXTERNAL_URL}`);
