@@ -1,50 +1,66 @@
 # X profile copy
 
-X limits the bio to **160 characters**. Counts below are exact and include spaces.
-Pick one; they are ordered by how well they work cold, on a profile someone
-landed on from a single retweet and will judge in about two seconds.
+Everything a visitor sees before deciding whether to follow. Ordered by how
+each piece works cold, on a profile somebody reached from a single retweet and
+will judge in about two seconds.
 
 ---
 
 ## Bio options
 
-### 1 — The thesis (recommended)
+X allows 160 characters and preserves line breaks. Every count below was
+measured, not estimated.
+
+### 1 — Recommended
 
 ```
-Every building's height is a live stock price. A city you walk around, built on
-Chainlink + Robinhood Chain. The skyline is the chart.
+Every building's height is a live stock price.
+3,338 Residents · 38 feeds · Robinhood Chain
+The skyline is the chart.
 ```
 
-**134 characters.** Leads with the mechanic rather than the category, so someone
-who has never heard of the game understands it before they decide whether they
-care. "The skyline is the chart" is the line people will repeat, and it belongs
-where it can be screenshotted.
+**117 characters.** Three lines doing three different jobs, which is why this
+beats the same words as one sentence.
+
+The first line is the whole concept in eight words and works with no context at
+all. It leads with the mechanic rather than the category, so somebody who has
+never heard of this understands it before deciding whether they care, and it
+says *height* rather than *building* because a building being a price is
+nonsense while a building's height being one is the actual product.
+
+The middle line is where 3,338 sits. Numbers separated by dots read as
+specification rather than as boasting, and a reader scanning a profile takes
+them in without reading a sentence.
+
+The last line is what people repeat. It belongs at the bottom, where it is the
+final thing seen and the easiest thing to screenshot.
 
 ---
 
-### 2 — The short one
+### 2 — One sentence
 
 ```
-A live city where building height = stock price.
-Chainlink feeds · Robinhood Chain · 3,338 Residents
+Every building's height is a live stock price. Lease a floor, light a window. 3,338 Residents on Robinhood Chain.
 ```
 
-**100 characters.** Scans faster and leaves room for a location field and link.
-Weaker than the first because it explains what it *is* without saying why anyone
-should feel anything.
+**113 characters.** Use this if the profile looks cramped with three lines on a
+narrow screen. It gains a verb, which the recommended version lacks: "lease a
+floor, light a window" tells somebody what they would actually do, and doing
+beats knowing when the aim is a click.
+
+It loses the tagline, which is a real cost.
 
 ---
 
-### 3 — The blunt one
+### 3 — Collection first
 
 ```
-38 live market feeds rendered as a city you can walk around. Buy floors. Watch
-your windows light up. No cash value, no cash-out.
+3,338 Residents in a city where every building's height is a live stock price. The skyline is the chart.
 ```
 
-**129 characters.** Puts the honesty in the bio itself, which builds unusual
-trust in a space where nobody does it. Use this one if the first wave of replies
-is people asking whether it is a yield product.
+**104 characters.** Leads with the supply, so use it while the mint is the thing
+being talked about and swap back afterwards. Weaker cold: a number means nothing
+to somebody who does not yet know what a Resident is.
 
 ---
 
@@ -76,11 +92,17 @@ more traits than the collection does.
 `x-cover-all-3338.png` is kept for the one post where "all 3,338" is the claim
 being made. It is not the header.
 
-**On the avatar:** the coin now carries Resident #66, the NVDA penthouse, drawn
-by the collection's own renderer from that token's published traits. It is a
-coin and a character at once, which is what a currency has always done: put a
-face on the obverse. Round and high-contrast, so it holds at 48px, which is
-where the decision actually gets made.
+**On the avatar:** the coin carries Resident #2971, the TSM penthouse, drawn by
+the collection's own renderer from that token's published traits. It is a coin
+and a character at once, which is what a currency has always done: put a face on
+the obverse.
+
+It started as #66, the NVDA penthouse, which is the better story. That token
+pairs the darkest skin in the trait set with the darkest jacket, and inside a
+small dark circle the figure would not separate from the sky behind it.
+Brightening does not fix that, because lifting every pixel raises the backdrop
+as much as the face. What reads is a light face on a dark ground, so the coin
+wears Porcelain over Midnight with a cyan visor.
 
 ---
 
@@ -92,7 +114,7 @@ The article needs something to drive to it. A link with no hook gets scrolled.
 We made every building's height a live stock price.
 
 38 Chainlink feeds. One city. Walk down Tech Row and you can see which company
-towers over its neighbours — you don't read it, you just see it.
+towers over its neighbours. You don't read it, you just see it.
 
 Market opens at 9:30 and the whole skyline wakes up at once.
 
