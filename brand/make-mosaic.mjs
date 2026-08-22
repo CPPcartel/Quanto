@@ -58,6 +58,37 @@ const LAYOUTS = [
     height: 168,
     scale: 3, // 1500 x 504, cropped to 500 by the header that uses it
   },
+  {
+    /**
+     * The header field, and the only layout where a face is genuinely legible.
+     *
+     * The other two answer "how do we fit them all in", and the answer costs
+     * exactly the thing the picture is for: at 24px a Resident is a smudge with
+     * a hair colour, and at 12px it is a speck. Nobody looking at either learns
+     * that this collection is made of characters.
+     *
+     * So this one inverts the question. The portrait is used at its native 32px
+     * with no downsampling at all, doubled to 64px on the way out, which is the
+     * largest a face can be while the field still reads as a crowd rather than
+     * as a row of avatars. 192 of them, not 3,338 — a portion, visible, which is
+     * worth more than a complete set nobody can see.
+     */
+    name: "mosaic-faces.png",
+    cell: 32, // the whole portrait, untouched
+    cols: 24,
+    rows: 8,
+    width: 768,
+    height: 256,
+    scale: 2, // 1536 x 512, cropped to 1500 x 500 by the header
+    /**
+     * Walk the collection in strides rather than taking the first 192.
+     *
+     * Ids are issued in generation order, so a contiguous run is a slice of one
+     * moment in the shuffle and shares more traits than the collection does.
+     * A coprime stride visits the whole range and lands on all three tiers.
+     */
+    stride: 17,
+  },
 ];
 
 /** Read one token's trait indices from its published metadata. */
@@ -110,7 +141,8 @@ for (const L of LAYOUTS) {
   const marginY = Math.floor((L.height - L.rows * L.cell) / 2);
 
   for (let cell = 0; cell < L.cols * L.rows; cell++) {
-    const portrait = portraitFor(ids[cell % ids.length]);
+    const pick = ((cell * (L.stride ?? 1)) % ids.length + ids.length) % ids.length;
+    const portrait = portraitFor(ids[pick]);
     if (!portrait) continue;
 
     const cx = marginX + (cell % L.cols) * L.cell;

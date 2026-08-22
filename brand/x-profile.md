@@ -60,13 +60,21 @@ is people asking whether it is a yield product.
 | **Header** | `brand/out/x-cover-1500x500.png`, the collection behind the name |
 | **Square cover** | `brand/out/quanto-city-1500.png`, for anywhere that wants 1:1 |
 
-**Two headers, one trade-off.** `x-cover-1500x500.png` shows roughly 1,300
-Residents at 24 pixels each, which is large enough that they read as people.
-`x-cover-all-3338.png` fits the entire collection in by halving the faces to 12
-pixels, and at that size they read as coloured specks rather than characters.
+**The header shows 192 Residents, not all of them, and that is the point.**
 
-The first is the header. The second exists because "all 3,338" is a real claim
-and there will be a post where you want to make it.
+Fitting the whole collection into a 1500x500 band forces each face down to 12
+pixels, where a Resident is a coloured speck. Nobody looking at that learns the
+collection is made of characters, which is the only thing the picture is for.
+`x-cover-1500x500.png` instead uses the portraits at their native size doubled,
+so a face is 64 pixels and you can read the visor, the hair, the jacket, and the
+cyan and gold frames that mark Landlords and Penthouses.
+
+The 192 are walked across the whole collection in strides rather than taken from
+the front, because ids are issued in generation order and a contiguous run shares
+more traits than the collection does.
+
+`x-cover-all-3338.png` is kept for the one post where "all 3,338" is the claim
+being made. It is not the header.
 
 **On the avatar:** the coin now carries Resident #66, the NVDA penthouse, drawn
 by the collection's own renderer from that token's published traits. It is a

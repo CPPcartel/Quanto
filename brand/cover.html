@@ -54,20 +54,21 @@
   .field {
     position: absolute;
     inset: 0;
-    background-image: url("out/mosaic.png");
-    background-size: 1500px 1500px;
-    background-position: center;
+    background-image: url("out/mosaic-faces.png");
+    background-size: 1536px 1536px;
+    background-position: top left;
     background-repeat: no-repeat;
     image-rendering: pixelated;
     /*
-     * 0.58, not the 0.34 the square cover uses.
+     * 0.74, far brighter than the square cover's 0.34.
      *
-     * The square has 24px faces and can afford to be a whisper. Here they are
-     * 12px, and at a third strength they stopped reading as people and became
-     * grain — which loses the only thing the header is actually showing. The
-     * scrim below does the legibility work instead, in the one place type sits.
+     * Dimming exists to stop a field of detail fighting the type. That is worth
+     * doing when the field is 5,250 specks and worth almost nothing when it is
+     * 192 faces, because at this size the faces ARE the message and hiding them
+     * defeats the picture. The scrim below does the legibility work instead, in
+     * the one place type actually sits.
      */
-    opacity: 0.58;
+    opacity: 0.74;
   }
 
   /* The pool the type sits in, pulled left so the wordmark has its own ground. */
