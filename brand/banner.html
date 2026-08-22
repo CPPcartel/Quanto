@@ -89,20 +89,36 @@
   /**
    * Position every row for a given frame.
    *
-   * The loop is seamless because each row travels a WHOLE number of strip
-   * widths across the sequence. The middle row covers one width against the
-   * other two, and the bottom covers two, so they run at three apparent speeds
-   * and still arrive back where they started on the same frame. Any other
-   * ratio drifts, and a banner that jumps every few seconds is worse than one
-   * that does not move.
+   * A gentle drift rather than a scroll, and the difference is not cosmetic.
+   *
+   * A continuous scroll can only loop by travelling a whole tile width, and the
+   * tile is 3072px. Fitting that into a GIF short enough to stay a few
+   * megabytes meant moving about 1,365 pixels a second, which is genuinely
+   * unpleasant to look at: faces whip past faster than the eye can settle on
+   * one. Lowering the frame rate does not help, it just makes the same speed
+   * judder.
+   *
+   * So the motion changed instead of its budget. Each row eases a short
+   * distance and comes back, following a sine, which returns exactly to zero
+   * at the end of the loop and is therefore seamless by construction rather
+   * than by arithmetic. Peak speed is around a fifth of the scroll and it
+   * slows to a stop at each turn, so nothing ever races.
+   *
+   * It compresses better too. Consecutive frames barely differ, which is the
+   * one thing GIF is good at and the scroll gave it no chance to do.
    */
-  const STRIP = 3072;
+  const DRIFT = [
+    { id: "r1", amplitude: 90, phase: 0 },
+    { id: "r2", amplitude: -150, phase: 0.35 },
+    { id: "r3", amplitude: 64, phase: 0.7 },
+  ];
 
   window.setFrame = (i, total) => {
     const t = i / total;
-    document.getElementById("r1").style.backgroundPositionX = `${-t * STRIP}px`;
-    document.getElementById("r2").style.backgroundPositionX = `${t * STRIP}px`;
-    document.getElementById("r3").style.backgroundPositionX = `${-t * STRIP * 2}px`;
+    for (const row of DRIFT) {
+      const x = row.amplitude * Math.sin(2 * Math.PI * (t + row.phase));
+      document.getElementById(row.id).style.backgroundPositionX = x.toFixed(2) + "px";
+    }
   };
 
   window.setFrame(0, 1);

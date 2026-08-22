@@ -36,8 +36,8 @@ const HEIGHT = 400;
  * visible difference, which is the trade taken. A banner nobody waits for is
  * not a banner.
  */
-const FRAME_COUNT = 36;
-const FPS = 16;
+const FRAME_COUNT = 40;
+const FPS = 12;
 
 const FFMPEG = join(
   HERE,
