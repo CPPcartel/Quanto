@@ -122,6 +122,24 @@ check("it comes back", profile?.name === wanted, JSON.stringify(profile).slice(0
 check("marked claimed", profile.nameClaimed === true);
 check("with the cooldown", profile.renameReadyAt > Date.now());
 check("and no device id", !JSON.stringify(profile).includes("prof-alice"));
+/**
+ * The owner sees their own addresses, and nobody else does.
+ *
+ * A count alone cannot answer "is the wallet holding my Resident the one I
+ * connected", which is the question somebody asks when their tier is not what
+ * they expected. It goes to the client that proved them and is never put into
+ * replicated state, where every player in the room would read it.
+ */
+check("wallets are listed for the owner", Array.isArray(profile.wallets), typeof profile.wallets);
+check(
+  "and the count agrees with the list",
+  profile.walletCount === profile.wallets.length,
+  profile.walletCount + " vs " + profile.wallets.length,
+);
+check(
+  "no wallet list is replicated to other players",
+  !("wallets" in (bobSeesAlice() ?? {})),
+);
 
 /**
  * Types, not just presence.

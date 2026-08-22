@@ -363,6 +363,16 @@ export class CityRoom extends Room<CityState> {
         tier: player?.tier ?? "none",
         createdAt: profile.createdAt,
         walletCount: profile.walletCount,
+        /**
+         * The owner's own addresses, sent only to them.
+         *
+         * A count alone cannot answer "is the wallet holding my Resident the
+         * one I connected", which is the question somebody asks when their
+         * tier is not what they expected. Addresses are public on chain
+         * anyway; what matters is that this goes to the one client that
+         * proved them and is never replicated to the room.
+         */
+        wallets: await this.store.walletsFor(deviceId),
       });
     });
 

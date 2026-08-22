@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSyncExternalStore } from "react";
 import { world, subscribeUi, getUiVersion } from "../net/world";
-import { checkName, claimName, setColor, setAvatar, requestProfile } from "../net/connection";
+import {
+  checkName,
+  claimName,
+  setColor,
+  setAvatar,
+  requestProfile,
+  signInWithWallet,
+} from "../net/connection";
+import { connectWallet, hasWallet, shortAddress } from "../net/wallet";
 
 /**
  * The player's own profile.
@@ -144,16 +152,14 @@ export function ProfilePanelBody() {
         )}
       </section>
 
+      <WalletSection profile={profile} />
+
       <section className="profile-section">
         <h4 className="profile-heading">Account</h4>
         <dl className="profile-facts">
           <div>
             <dt>Tier</dt>
             <dd className="mono">{(profile?.tier ?? world.localTier).toUpperCase()}</dd>
-          </div>
-          <div>
-            <dt>Wallets linked</dt>
-            <dd className="mono">{profile?.walletCount ?? 0}</dd>
           </div>
           <div>
             <dt>Resident since</dt>
@@ -164,6 +170,78 @@ export function ProfilePanelBody() {
         </dl>
       </section>
     </div>
+  );
+}
+
+/**
+ * Connecting a wallet, which is about holdings and not about signing in.
+ *
+ * Your account already says who you are. This says what you hold, and it is the
+ * only route to a tier, to holder-only traits, and through the rope at The
+ * Vault. Signing proves the wallet is yours: it costs no gas and authorises no
+ * transaction.
+ *
+ * Every address you connect is checked, so a Resident sitting in a cold wallet
+ * still counts while you play from another one.
+ */
+function WalletSection({ profile }: { profile: typeof world.profile }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const wallets = profile?.wallets ?? [];
+
+  const connect = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await signInWithWallet((nonce) => connectWallet(nonce));
+      // The server decides what changed; ask rather than assume.
+      requestProfile();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="profile-section">
+      <h4 className="profile-heading">Wallets</h4>
+
+      {wallets.length > 0 ? (
+        <ul className="wallet-list">
+          {wallets.map((w) => (
+            <li key={w} className="mono">
+              {shortAddress(w)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="dim tiny">
+          None connected. Your floors and balance do not need one; a wallet is
+          how the city sees a Quanto Residents NFT you hold.
+        </p>
+      )}
+
+      {hasWallet() ? (
+        <>
+          <button className="ghost-btn" disabled={busy} onClick={connect}>
+            {busy ? "Check your wallet…" : wallets.length ? "Connect another" : "Connect a wallet"}
+          </button>
+          <p className="dim tiny">
+            You sign one message to prove it is yours. No gas, no transaction,
+            and nothing about your progress changes.
+          </p>
+        </>
+      ) : (
+        <p className="dim tiny">
+          No browser wallet detected. MetaMask is the usual one; install it and
+          reload to connect.
+        </p>
+      )}
+
+      {error && <p className="claim-status bad">{error}</p>}
+    </section>
   );
 }
 

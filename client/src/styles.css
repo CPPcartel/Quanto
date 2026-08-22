@@ -1600,3 +1600,21 @@ button.emote-btn:hover { border-color: var(--violet); }
   display: flex;
   gap: 0.5rem;
 }
+
+/* ---------- connected wallets ---------- */
+.wallet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wallet-list li {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+}

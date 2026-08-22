@@ -280,6 +280,8 @@ export const world = {
     tier: string;
     createdAt: string | null;
     walletCount: number;
+    /** The owner's own proved addresses. Never replicated to other players. */
+    wallets: string[];
   } | null,
 
   /** Live availability answer while somebody types a name. */
