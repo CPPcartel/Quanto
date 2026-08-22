@@ -57,8 +57,16 @@ is people asking whether it is a yield product.
 | **Location** | `The skyline is the chart` — X does not validate it, and it is free real estate |
 | **Link** | `quanto.gg` (or the live Vercel URL until DNS is set) |
 | **Profile picture** | `brand/out/block-coin-576.png`, the $BLOCK coin |
-| **Header** | `brand/out/x-cover-1500x500.png` |
+| **Header** | `brand/out/x-cover-1500x500.png`, the collection behind the name |
 | **Square cover** | `brand/out/quanto-city-1500.png`, for anywhere that wants 1:1 |
+
+**Two headers, one trade-off.** `x-cover-1500x500.png` shows roughly 1,300
+Residents at 24 pixels each, which is large enough that they read as people.
+`x-cover-all-3338.png` fits the entire collection in by halving the faces to 12
+pixels, and at that size they read as coloured specks rather than characters.
+
+The first is the header. The second exists because "all 3,338" is a real claim
+and there will be a post where you want to make it.
 
 **On the avatar:** the coin now carries Resident #66, the NVDA penthouse, drawn
 by the collection's own renderer from that token's published traits. It is a
