@@ -7,6 +7,7 @@ import { world, markUiDirty } from "./net/world";
 import { useAccount } from "./auth/useAccount";
 import { privyEnabled } from "./auth/PrivyGate";
 import { SignInWall, SignInUnavailable } from "./ui/SignInWall";
+import { Boundary } from "./ui/Boundary";
 import { ClaimName } from "./ui/ClaimName";
 
 /**
@@ -129,8 +130,14 @@ export default function Game() {
   return (
     <div className="shell">
       <div className="viewport" ref={host} />
-      {/* The HUD stays mounted so the city keeps rendering behind the wall. */}
-      <Hud />
+      {/*
+        The HUD stays mounted so the city keeps rendering behind the wall, and
+        carries its own boundary so one panel throwing cannot take the renderer
+        and every other panel down with it.
+      */}
+      <Boundary area="hud">
+        <Hud />
+      </Boundary>
       {locked && (privyEnabled ? <SignInWall /> : <SignInUnavailable />)}
       {needsName && <ClaimName />}
     </div>

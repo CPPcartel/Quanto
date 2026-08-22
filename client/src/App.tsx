@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+import { Boundary } from "./ui/Boundary";
 import { useRoute } from "./site/router";
 import { Nav, Footer } from "./site/Chrome";
 import { Landing } from "./site/Landing";
@@ -21,9 +22,11 @@ export default function App() {
 
   if (route === "/play") {
     return (
-      <Suspense fallback={<Booting />}>
-        <Game />
-      </Suspense>
+      <Boundary area="game">
+        <Suspense fallback={<Booting />}>
+          <Game />
+        </Suspense>
+      </Boundary>
     );
   }
 
