@@ -6,6 +6,7 @@
   "scripts": {
     "preview": "node src/generate.mjs --preview",
     "build": "node src/generate.mjs",
-    "verify": "node src/verify.mjs"
+    "verify": "node src/verify.mjs",
+    "csv": "node src/make-csv.mjs"
   }
 }
