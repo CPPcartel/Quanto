@@ -1,24 +1,27 @@
 /**
- * Every Resident, in one square.
+ * Every Resident, as a field.
  *
  * All 3,338 of them, re-rendered from their own published traits rather than
  * decoded from the PNGs on disk — the collection's encoder writes PNGs but does
  * not read them, and re-drawing is both faster and provably the same art.
  *
- * The geometry is the whole problem here, and it is arithmetic rather than
- * taste. Pixel art rescaled at a non-integer ratio turns to mush, so every step
- * from the 32px portrait to the 1500px canvas has to be a clean integer.
+ * The geometry is arithmetic rather than taste. Pixel art rescaled at a
+ * non-integer ratio turns to mush, so every step from the 32px portrait to the
+ * final canvas has to be a clean integer, and 32 only divides cleanly by
+ * 1, 2, 4, 8, 16 and 32. That constraint decides both layouts below; neither
+ * cell size was chosen for looks.
  *
- *   32 -> 8    each portrait sampled 4:1, one pixel per 4x4 block
- *   62 x 62    3,844 cells at 8px = 496px, so the field bleeds to the edge
- *   500        canvas, with 2px of slack rather than a visible frame
- *   x3         500 * 3 = 1500 exactly
+ * SQUARE  1500x1500, 8px sample, 62x62 cells, 24px per face.
+ * WIDE    1500x500 for an X header. A band of the square one would only show
+ *         about 1,300 faces, so this is its own grid: a 4px sample at 125x42
+ *         puts all 3,338 in the header at 12px each, which is the largest a
+ *         face can be while every token still fits.
  *
- * 3,338 does not tile neatly into anything: it factors as 2 x 1669, and 1669 is
- * prime. The grid is therefore larger than the collection and wraps back to the
- * start rather than leaving a ragged hole in the bottom row. Every token appears
- * at least once, which is what "all of them" has to mean, and at eight pixels a
- * face the repeats are invisible.
+ * 3,338 tiles into nothing — it factors as 2 x 1669, and 1669 is prime — so
+ * both grids are deliberately larger than the collection and wrap back to the
+ * start rather than leaving a ragged hole in the final row. Every token appears
+ * at least once, which is what "all of them" has to mean, and at this size the
+ * repeats are invisible.
  *
  *   node brand/make-mosaic.mjs
  */
@@ -34,15 +37,28 @@ const OUT = join(HERE, "out");
 const META = join(HERE, "..", "collection", "out", "metadata");
 
 const PORTRAIT = 32;
-const CELL = 8; // 32 / 4, an exact 4:1 sample
-const COLS = 62;
-const ROWS = 62;
-const CANVAS = 500;
-const SCALE = 3; // 500 * 3 = 1500
-const MOSAIC = COLS * CELL; // 464
-const MARGIN = Math.floor((CANVAS - MOSAIC) / 2); // 18
-
 const INK = "#11131a";
+
+const LAYOUTS = [
+  {
+    name: "mosaic.png",
+    cell: 8, // 32 / 4
+    cols: 62,
+    rows: 62,
+    width: 500,
+    height: 500,
+    scale: 3, // 1500 x 1500
+  },
+  {
+    name: "mosaic-wide.png",
+    cell: 4, // 32 / 8
+    cols: 125,
+    rows: 42,
+    width: 500,
+    height: 168,
+    scale: 3, // 1500 x 504, cropped to 500 by the header that uses it
+  },
+];
 
 /** Read one token's trait indices from its published metadata. */
 function traitsOf(id) {
@@ -61,57 +77,74 @@ function traitsOf(id) {
   return { indices, tier: (named.tier ?? "resident").toLowerCase(), tower: named.tower ?? null };
 }
 
-// ---------------------------------------------------------------------------
-
 const ids = [];
 for (let id = 1; id <= 4000 && ids.length < 3338; id++) {
   if (existsSync(join(META, `${id}.json`))) ids.push(id);
 }
-console.log(`found ${ids.length} tokens`);
+console.log(`found ${ids.length} tokens\n`);
 
-const canvas = new Grid(CANVAS);
-canvas.clear(INK);
-
-let drawn = 0;
-for (let cell = 0; cell < COLS * ROWS; cell++) {
-  // Wrap past the end so the final row has no gap.
-  const id = ids[cell % ids.length];
+/**
+ * Portraits are drawn once and reused across layouts.
+ *
+ * The two grids sample the same 32px art at different ratios, so re-rendering
+ * for each would double the work to produce identical pixels.
+ */
+const cache = new Map();
+function portraitFor(id) {
+  if (cache.has(id)) return cache.get(id);
   const t = traitsOf(id);
-  if (!t) continue;
-
-  const portrait = drawPortrait(
-    resolve(t.indices),
-    t.tier,
-    t.tower,
-    (0xca11ed + id) >>> 0
-  );
-
-  const cx = MARGIN + (cell % COLS) * CELL;
-  const cy = MARGIN + Math.floor(cell / COLS) * CELL;
-
-  for (let y = 0; y < CELL; y++) {
-    for (let x = 0; x < CELL; x++) {
-      /**
-       * The centre of each 4x4 block, not its corner.
-       *
-       * Sampling the corner catches whatever happens to sit on a boundary,
-       * which for this art is often an outline — the mosaic came out darker and
-       * flatter than the collection actually looks. The centre lands on the
-       * body of a shape and keeps each face's real colour.
-       */
-      const [r, g, b] = portrait.get(
-        Math.min(PORTRAIT - 1, x * 4 + 2),
-        Math.min(PORTRAIT - 1, y * 4 + 2)
-      );
-      canvas.set(cx + x, cy + y, `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`);
-    }
-  }
-  drawn++;
+  if (!t) return null;
+  const p = drawPortrait(resolve(t.indices), t.tier, t.tower, (0xca11ed + id) >>> 0);
+  cache.set(id, p);
+  return p;
 }
 
 mkdirSync(OUT, { recursive: true });
-writeFileSync(join(OUT, "mosaic.png"), encodePng(canvas, SCALE));
 
-console.log(`mosaic.png  ${CANVAS * SCALE}x${CANVAS * SCALE}`);
-console.log(`  ${COLS}x${ROWS} cells, ${drawn} portraits drawn`);
-console.log(`  ${ids.length} unique tokens, ${COLS * ROWS - ids.length} repeated to fill the last row`);
+for (const L of LAYOUTS) {
+  const canvas = new Grid(Math.max(L.width, L.height));
+  canvas.clear(INK);
+
+  const step = PORTRAIT / L.cell; // 4 or 8, both exact
+  const marginX = Math.floor((L.width - L.cols * L.cell) / 2);
+  const marginY = Math.floor((L.height - L.rows * L.cell) / 2);
+
+  for (let cell = 0; cell < L.cols * L.rows; cell++) {
+    const portrait = portraitFor(ids[cell % ids.length]);
+    if (!portrait) continue;
+
+    const cx = marginX + (cell % L.cols) * L.cell;
+    const cy = marginY + Math.floor(cell / L.cols) * L.cell;
+
+    for (let y = 0; y < L.cell; y++) {
+      for (let x = 0; x < L.cell; x++) {
+        /**
+         * The centre of each block, not its corner.
+         *
+         * Corners in this art usually land on an outline, and sampling them
+         * produced a field noticeably darker and flatter than the collection
+         * actually looks. The centre lands on the body of a shape and keeps
+         * each face's real colour.
+         */
+        const [r, g, b] = portrait.get(
+          Math.min(PORTRAIT - 1, Math.floor(x * step + step / 2)),
+          Math.min(PORTRAIT - 1, Math.floor(y * step + step / 2))
+        );
+        canvas.set(cx + x, cy + y, `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`);
+      }
+    }
+  }
+
+  /**
+   * The encoder writes squares only, so a wide layout occupies the top band of
+   * one and the page that uses it crops the rest. Flat ink compresses to almost
+   * nothing, so the unused area costs a few kilobytes rather than a redesign of
+   * the PNG writer.
+   */
+  writeFileSync(join(OUT, L.name), encodePng(canvas, L.scale));
+
+  const total = L.cols * L.rows;
+  console.log(`${L.name}  band ${L.width * L.scale}x${L.height * L.scale}`);
+  console.log(`  ${L.cols}x${L.rows} cells, ${L.cell * L.scale}px per face`);
+  console.log(`  ${ids.length} unique, ${total - ids.length} repeated to fill\n`);
+}
