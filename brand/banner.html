@@ -1,0 +1,109 @@
+<title>Collection banner</title>
+<style>
+  /*
+    The collection banner, 1400x400, animated.
+
+    Deliberately carries no wordmark. The marketplace draws the collection name
+    and logo over and under this space itself, and a banner that repeats them
+    ends up arguing with its own page. So this is atmosphere: the residents
+    themselves, moving.
+
+    Three rows at different speeds, the middle one against the other two. That
+    is the whole idea, and it works because a crowd moving at one speed reads as
+    a printed strip while a crowd moving at several reads as depth.
+  */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink: #11131a;
+    --amber: #e5a85c;
+  }
+
+  body {
+    width: 1400px;
+    height: 400px;
+    background: var(--ink);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /*
+    One row of the faces mosaic, tiled horizontally.
+
+    The source is 24 columns of 64px portraits, so a row is 1536px wide and the
+    strip repeats seamlessly at that interval. Doubling to 128px keeps it an
+    exact integer scale; anything else resamples pixel art into mush, and
+    image-rendering stops the browser helpfully doing that anyway.
+  */
+  .row {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 128px;
+    background-image: url("out/mosaic-faces.png");
+    background-size: 3072px 3072px;
+    background-repeat: repeat-x;
+    image-rendering: pixelated;
+  }
+
+  /* Rows are cut from different parts of the mosaic so no face repeats across them. */
+  .r1 { top: 8px;   background-position-y: -0px; }
+  .r2 { top: 136px; background-position-y: -128px; opacity: 0.92; }
+  .r3 { top: 264px; background-position-y: -256px; }
+
+  /* Depth: the outer rows sit back, the middle one comes forward. */
+  .r1, .r3 { opacity: 0.5; }
+
+  /* A warm pool through the middle, so the band is lit rather than flat. */
+  .warm {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(58% 130% at 50% 50%, rgba(229, 168, 92, 0.20) 0%, rgba(229, 168, 92, 0) 72%);
+    pointer-events: none;
+  }
+
+  /*
+    Edges fade to the ground colour.
+
+    A marketplace crops this banner differently at every width, so the crowd has
+    to run off the frame rather than stop at it. Vertical fades matter too: the
+    page puts its own furniture over the top and bottom edges.
+  */
+  .edges {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--ink) 0%, rgba(17,19,26,0) 14%, rgba(17,19,26,0) 86%, var(--ink) 100%),
+      linear-gradient(180deg, var(--ink) 0%, rgba(17,19,26,0) 16%, rgba(17,19,26,0) 84%, var(--ink) 100%);
+  }
+</style>
+
+<div class="row r1" id="r1"></div>
+<div class="row r2" id="r2"></div>
+<div class="row r3" id="r3"></div>
+<div class="warm"></div>
+<div class="edges"></div>
+
+<script>
+  /**
+   * Position every row for a given frame.
+   *
+   * The loop is seamless because each row travels a WHOLE number of strip
+   * widths across the sequence. The middle row covers one width against the
+   * other two, and the bottom covers two, so they run at three apparent speeds
+   * and still arrive back where they started on the same frame. Any other
+   * ratio drifts, and a banner that jumps every few seconds is worse than one
+   * that does not move.
+   */
+  const STRIP = 3072;
+
+  window.setFrame = (i, total) => {
+    const t = i / total;
+    document.getElementById("r1").style.backgroundPositionX = `${-t * STRIP}px`;
+    document.getElementById("r2").style.backgroundPositionX = `${t * STRIP}px`;
+    document.getElementById("r3").style.backgroundPositionX = `${-t * STRIP * 2}px`;
+  };
+
+  window.setFrame(0, 1);
+</script>
