@@ -87,7 +87,7 @@ which company towers over its neighbours. you dont read it, you just see it
 
 market opens in 15 min and the entire skyline wakes up at once
 
-quanto.gg
+quanto.fun
 ```
 
 Post before the open so people are watching when it happens. This is the whole

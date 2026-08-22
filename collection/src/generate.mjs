@@ -31,7 +31,7 @@ const DESCRIPTION =
   "every building's height is a real stock price. Your traits render on your character " +
   "in-game. No tier pays $BLOCK; identity, access and cosmetics only.";
 
-const EXTERNAL = "https://quanto.city";
+const EXTERNAL = "https://quanto.fun";
 
 // ---------------------------------------------------------------------------
 

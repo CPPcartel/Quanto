@@ -7,6 +7,7 @@
     "preview": "node src/generate.mjs --preview",
     "build": "node src/generate.mjs",
     "verify": "node src/verify.mjs",
-    "csv": "node src/make-csv.mjs"
+    "csv": "node src/make-csv.mjs",
+    "retarget": "node src/retarget.mjs"
   }
 }

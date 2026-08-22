@@ -71,7 +71,7 @@ to somebody who does not yet know what a Resident is.
 | **Name** | `Quanto` |
 | **Handle** | `@quanto` if free, else `@quantocity`, `@playquanto`, `@quantogg` |
 | **Location** | `The skyline is the chart` — X does not validate it, and it is free real estate |
-| **Link** | `quanto.gg` (or the live Vercel URL until DNS is set) |
+| **Link** | `quanto.fun` (or the live Vercel URL until DNS is set) |
 | **Profile picture** | `brand/out/block-coin-576.png`, the $BLOCK coin |
 | **Header** | `brand/out/x-cover-1500x500.png`, the collection behind the name |
 | **Square cover** | `brand/out/quanto-city-1500.png`, for anywhere that wants 1:1 |

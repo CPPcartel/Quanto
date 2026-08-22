@@ -48,12 +48,12 @@ building's height is a real stock price. Your token is your character in-game.
 
 ## Before importing
 
-**The `external_url` column points at `https://quanto-iota.vercel.app`.**
+**The `external_url` column points at `https://quanto.fun`.**
 
 Regenerate with the real domain before minting if you are buying one:
 
 ```
-node src/make-csv.mjs https://quanto.gg
+node src/make-csv.mjs https://quanto.fun
 ```
 
 This is worth doing first. The URL is written into metadata that outlives any

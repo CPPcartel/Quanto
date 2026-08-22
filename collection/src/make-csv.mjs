@@ -6,7 +6,7 @@
  * JSON is the one the contract points at and this file is wrong.
  *
  *   node src/make-csv.mjs                       # uses the live site
- *   node src/make-csv.mjs https://quanto.gg     # once the domain is yours
+ *   node src/make-csv.mjs https://quanto.fun     # once the domain is yours
  */
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -23,7 +23,7 @@ const OUT = join(HERE, "out", "quanto-residents.csv");
  * outlives any redeploy, and a marketplace listing pointing at a dead host is
  * the kind of thing nobody notices until somebody is deciding whether to buy.
  */
-const EXTERNAL_URL = process.argv[2] ?? "https://quanto-iota.vercel.app";
+const EXTERNAL_URL = process.argv[2] ?? "https://quanto.fun";
 
 /**
  * The trait columns, in the order a reader would want them.

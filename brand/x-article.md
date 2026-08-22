@@ -308,7 +308,7 @@ A city is a serious challenger. It is legible at a glance, it is memorable, it i
 
 Come and look at the skyline.
 
-**quanto.gg**
+**quanto.fun**
 
 ---
 

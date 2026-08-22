@@ -18,16 +18,41 @@ const app = express();
 app.use(express.json());
 
 /**
- * Allow the deployed client origin to reach this server.
+ * Allow the deployed client origins to reach this server.
  *
  * In production the client is served from a CDN on a different domain, so the
  * browser needs an explicit CORS grant for the matchmaking HTTP calls that
- * precede the WebSocket upgrade. Set ALLOWED_ORIGIN to the client's URL;
- * unset means "any origin", which is right for local dev only.
+ * precede the WebSocket upgrade. Unset means "any origin", which is right for
+ * local development only.
+ *
+ * ALLOWED_ORIGIN takes a comma-separated list rather than a single value,
+ * because a site almost never has exactly one origin at a time. Moving to a
+ * custom domain means both the old host and the new one are live at once while
+ * DNS settles, and a single value would have made whichever half of the
+ * audience hit the other host unable to connect at all.
  */
-const allowedOrigin = process.env.ALLOWED_ORIGIN ?? "*";
+const allowedOrigins = (process.env.ALLOWED_ORIGIN ?? "*")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  /**
+   * Echo the caller's origin when it is on the list.
+   *
+   * Access-Control-Allow-Origin accepts one value or "*", never a list, so the
+   * matching origin has to be reflected. Vary tells caches that the response
+   * differs per origin; without it a CDN can hand one site's grant to another
+   * and produce a failure nobody can reproduce locally.
+   */
+  const origin = req.get("origin");
+  if (allowedOrigins.includes("*")) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  } else if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   if (req.method === "OPTIONS") {
