@@ -58,6 +58,7 @@ is people asking whether it is a yield product.
 | **Link** | `quanto.gg` (or the live Vercel URL until DNS is set) |
 | **Profile picture** | `brand/out/block-coin-576.png`, the $BLOCK coin |
 | **Header** | `brand/out/x-cover-1500x500.png` |
+| **Square cover** | `brand/out/quanto-city-1500.png`, for anywhere that wants 1:1 |
 
 **On the avatar:** the coin now carries Resident #66, the NVDA penthouse, drawn
 by the collection's own renderer from that token's published traits. It is a
