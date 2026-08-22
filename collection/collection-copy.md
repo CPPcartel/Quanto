@@ -36,13 +36,27 @@ and gets its own space. The last line is the honest one and stays in.
 
 ---
 
-## Short version, where space is tight
+## Short description
 
 ```
-3,338 residents of Quanto, a live city on Robinhood Chain where every
-building's height is a real stock price. Your token is your character in-game.
-38 towers, 38 penthouses, one each. No tier pays out.
+3,338 residents of Quanto, a live isometric city on Robinhood Chain where every
+building's height is a real stock price. Hold one and it becomes your character
+in-game. 38 towers, 38 penthouses, one each.
 ```
+
+**204 characters.** Four sentences doing four jobs: what they are, what the
+world is, what holding does, and the one fact worth repeating. The penthouse
+line goes last because it is the strongest thing in the collection and it fits
+in eight words.
+
+Tighter, for slots that sit next to the chain name anyway:
+
+```
+3,338 residents of a live city where every building's height is a real stock
+price. Your token is your character in-game. 38 towers, 38 penthouses, one each.
+```
+
+**157 characters.**
 
 ---
 
