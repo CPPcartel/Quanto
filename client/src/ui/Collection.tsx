@@ -1,6 +1,7 @@
 import { useSyncExternalStore, useState } from "react";
 import { world, subscribeUi, getUiVersion } from "../net/world";
 import { describeTraits } from "../pixi/traits";
+import { LINKS } from "../site/links";
 
 /**
  * What the player holds, and what each tier grants.
@@ -10,8 +11,6 @@ import { describeTraits } from "../pixi/traits";
  * locks you out (it does not). Both are stated on the panel rather than left to
  * a Discord argument.
  */
-
-const COLLECTION_URL = "https://opensea.io/collection/quanto-residents";
 
 const TIERS = [
   {
@@ -113,7 +112,7 @@ export function CollectionPanelBody({ onClose }: { onClose: () => void }) {
           and guests.
         </p>
 
-        <a className="primary-btn tier-link" href={COLLECTION_URL} target="_blank" rel="noreferrer">
+        <a className="primary-btn tier-link" href={LINKS.opensea} target="_blank" rel="noreferrer">
           View on OpenSea
         </a>
     </>

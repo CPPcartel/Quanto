@@ -178,6 +178,16 @@ export function Social({ compact = false }: { compact?: boolean }) {
     ],
   ];
 
+  entries.push([
+    "Residents on OpenSea",
+    LINKS.opensea,
+    <g key="os">
+      <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M10.1 4.3 V10.9 H5.3 Z" fill="currentColor" />
+      <path d="M4.1 12.6 H15.9 C15 14.6 12.7 15.8 10 15.8 S5 14.6 4.1 12.6 Z" fill="currentColor" />
+    </g>,
+  ]);
+
   return (
     <span className={`social ${compact ? "compact" : ""}`}>
       {entries.map(([label, url, path]) => {
@@ -226,6 +236,9 @@ export function Footer() {
           <h4>Play</h4>
           <a {...linkProps("/play")}>Enter the city</a>
           <a {...linkProps("/docs")}>How it works</a>
+          <a href={LINKS.opensea} target="_blank" rel="noreferrer noopener">
+            Residents collection
+          </a>
         </div>
 
         <div>

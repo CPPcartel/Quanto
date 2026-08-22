@@ -306,8 +306,12 @@ export function Landing() {
         <div className="faq">
           <Faq q="Do I need a wallet?">
             No. An email is enough, and one is created for you in seconds. A wallet only
-            matters if you hold a Quanto Residents NFT and want the city to know about it,
-            which unlocks holder traits and the door to The Vault.
+            matters if you hold a{" "}
+            <a href={LINKS.opensea} target="_blank" rel="noreferrer noopener">
+              Quanto Residents
+            </a>{" "}
+            NFT and want the city to know about it, which unlocks holder traits and the door
+            to The Vault.
           </Faq>
           <Faq q="Does it cost anything?">
             No. Playing is free, and reading prices from the chain costs nothing, no
