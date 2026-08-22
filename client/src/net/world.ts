@@ -198,6 +198,14 @@ export const world = {
    * requires accounts and the client was built without `VITE_PRIVY_APP_ID`.
    */
   authRequired: false,
+  /**
+   * Which reconnection attempt is in flight, 0 when connected or given up.
+   *
+   * The HUD needs to tell "trying again" apart from "gave up", because those
+   * ask completely different things of the player: one is wait, the other is
+   * press this button.
+   */
+  reconnectAttempt: 0,
   sessionId: "",
 
   /** Locally predicted position — what the camera follows. */

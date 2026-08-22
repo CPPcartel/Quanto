@@ -1,6 +1,7 @@
 import { useSyncExternalStore, useEffect, useState, useRef } from "react";
 import { world, subscribeUi, getUiVersion, type TickerView } from "../net/world";
 import {
+  retryNow,
   setName,
   buyFloor,
   onBuyResult,
@@ -49,15 +50,50 @@ export function Hud() {
     );
   }
 
+  /**
+   * Reconnecting, which is not an error and must not read like one.
+   *
+   * The overwhelmingly common cause of a drop is a redeploy, which resolves
+   * itself in seconds. Showing a failure panel for something that is about to
+   * fix itself teaches players to reload at the first flicker.
+   */
+  if (w.conn === "connecting" && w.reconnectAttempt > 0) {
+    return (
+      <div className="overlay center">
+        <div className="panel error-panel">
+          <h2>Reconnecting…</h2>
+          <p className="dim">
+            Lost the connection to the city. Trying again
+            {w.reconnectAttempt > 2 ? ` (attempt ${w.reconnectAttempt})` : ""}.
+          </p>
+          <p className="dim tiny">
+            Your name, floors and balance are on the server and are not affected.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (w.conn === "error") {
     return (
       <div className="overlay center">
         <div className="panel error-panel">
           <h2>Can't reach the city</h2>
           <p>{w.error}</p>
-          <p className="dim">
-            Start the game server with <code>npm run dev</code> in the <code>server</code> folder,
-            then reload.
+          {/*
+            A button, not an instruction.
+
+            This used to tell the player to run `npm run dev` in the server
+            folder, which is a developer's own machine talking and had been
+            shipping to everybody. What a player can actually do is try again.
+          */}
+          <div className="crash-actions">
+            <button className="primary-btn" onClick={() => retryNow()}>
+              Try again
+            </button>
+          </div>
+          <p className="dim tiny">
+            Nothing is lost. Your name, floors and balance live on the server.
           </p>
         </div>
       </div>

@@ -201,7 +201,8 @@ export async function connect() {
         crewTag: p.crewTag ?? "",
         crewColor: p.crewColor ?? "",
         tier: (p.tier ?? "none") as any,
-        traits: p.traits || "000010",
+        // Empty means "no chosen look"; see world.localTraits.
+        traits: p.traits ?? "",
         buffer: [{ t: performance.now(), x: p.x, z: p.z, yaw: p.yaw }],
       };
       world.remotes.set(sessionId, remote);
@@ -213,7 +214,7 @@ export async function connect() {
         remote.crewTag = p.crewTag ?? "";
         remote.crewColor = p.crewColor ?? "";
         remote.tier = (p.tier ?? "none") as any;
-        remote.traits = p.traits || "000010";
+        remote.traits = p.traits ?? "";
         remote.name = p.name;
         remote.color = p.color;
         remote.buffer.push({ t: performance.now(), x: p.x, z: p.z, yaw: p.yaw });
@@ -493,10 +494,20 @@ export async function connect() {
       markUiDirty();
     });
 
-    joined.onLeave(() => {
-      world.conn = "error";
-      world.error = "disconnected from server";
-      markUiDirty();
+    joined.onLeave((code) => {
+      /**
+       * 1000 is a clean close, which is what `leave()` produces when the
+       * player is deliberately being moved: signing in, signing out, or
+       * navigating away. Retrying those would fight the thing that asked for
+       * the disconnect in the first place.
+       */
+      if (code === 1000) {
+        world.conn = "error";
+        world.error = "disconnected from server";
+        markUiDirty();
+        return;
+      }
+      void retryConnect();
     });
 
     return joined;
@@ -546,6 +557,89 @@ function syncWallet(p: any) {
     const view = world.tickers.get(symbol);
     if (view) view.myFloors = count;
   });
+}
+
+/**
+ * How long to wait before the next attempt, in milliseconds.
+ *
+ * Backs off so a server that is genuinely down is not hammered, and caps well
+ * short of a minute so somebody staring at the screen after a deploy is not
+ * left wondering whether it is ever coming back. The first retry is nearly
+ * immediate because the overwhelmingly common cause is a redeploy, which is
+ * over in seconds.
+ */
+const BACKOFF = [400, 1200, 2500, 5000, 8000, 12000, 15000];
+
+/** Give up eventually rather than retrying into a closed laptop forever. */
+const MAX_ATTEMPTS = 12;
+
+let retrying = false;
+
+/**
+ * Reconnect after an unexpected drop.
+ *
+ * The room is gone, so this rejoins rather than resuming: all state worth
+ * keeping is on the server, and a fresh join re-runs the same identity check
+ * the first one did.
+ */
+async function retryConnect() {
+  if (retrying) return;
+  retrying = true;
+  room = null;
+
+  try {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      world.conn = "connecting";
+      world.reconnectAttempt = attempt;
+      world.error = "";
+      markUiDirty();
+
+      await new Promise((r) => setTimeout(r, BACKOFF[Math.min(attempt - 1, BACKOFF.length - 1)]));
+
+      try {
+        await connect();
+        /**
+         * Success is "we have a room", not "conn says connected".
+         *
+         * `world.conn` was assigned a few lines up, so the compiler has it
+         * narrowed and rejects comparing it to anything else; it cannot see
+         * that connect() mutates the store. The room handle is the more direct
+         * statement of the same fact anyway: connect() assigns it only after a
+         * successful join.
+         */
+        if (room) {
+          world.reconnectAttempt = 0;
+          markUiDirty();
+          return;
+        }
+      } catch {
+        /* try again below */
+      }
+
+      /**
+       * An auth refusal is not a connectivity problem and will not fix itself
+       * by waiting. Stop, and let the sign-in wall take over.
+       */
+      if (world.authRequired) {
+        world.reconnectAttempt = 0;
+        markUiDirty();
+        return;
+      }
+    }
+
+    world.conn = "error";
+    world.error = "lost connection to the city";
+    world.reconnectAttempt = 0;
+    markUiDirty();
+  } finally {
+    retrying = false;
+  }
+}
+
+/** Reconnect on demand, from the button the player is shown. */
+export function retryNow() {
+  world.authRequired = false;
+  void retryConnect();
 }
 
 /**
