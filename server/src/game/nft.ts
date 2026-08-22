@@ -1,4 +1,11 @@
-import { createPublicClient, http, defineChain, parseAbi, getAddress } from "viem";
+import {
+  createPublicClient,
+  http,
+  defineChain,
+  parseAbi,
+  parseAbiItem,
+  getAddress,
+} from "viem";
 import type { Db } from "../db/db.js";
 import { encodeAttributes, DEFAULT_TRAIT_CODE, type MetadataAttribute } from "../config/traits.js";
 
@@ -36,12 +43,32 @@ const robinhoodChain = defineChain({
   },
 });
 
+/**
+ * tokenOfOwnerByIndex is deliberately absent.
+ *
+ * It belongs to ERC721Enumerable, which the deployed collection does not
+ * implement — marketplace drop contracts usually do not. Keeping it in the ABI
+ * would let a future edit reach for a function that reverts on every call.
+ */
 const ERC721_ABI = parseAbi([
   "function balanceOf(address owner) view returns (uint256)",
-  "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+  "function ownerOf(uint256 tokenId) view returns (address)",
   "function tokenURI(uint256 tokenId) view returns (string)",
-  "function totalSupply() view returns (uint256)",
 ]);
+
+/** The only event needed to work out who holds what. */
+const TRANSFER_EVENT = parseAbiItem(
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+);
+
+/**
+ * Where to start reading Transfer logs.
+ *
+ * Scanning from genesis is wasteful and, on a public RPC, usually refused. The
+ * collection cannot have moved a token before it existed, so its deployment
+ * block is both the earliest useful point and a safe one.
+ */
+const FIRST_BLOCK = BigInt(process.env.COLLECTION_BLOCK ?? "0");
 
 export type Tier = "none" | "resident" | "landlord" | "penthouse";
 
@@ -166,19 +193,9 @@ export class NftService {
       args: [owner],
     });
 
-    const count = Math.min(Number(balance), MAX_TOKENS_SCANNED);
-    if (count <= 0) return NO_HOLDING;
+    if (Number(balance) <= 0) return NO_HOLDING;
 
-    const ids = await Promise.all(
-      Array.from({ length: count }, (_, i) =>
-        this.client.readContract({
-          address: collection,
-          abi: ERC721_ABI,
-          functionName: "tokenOfOwnerByIndex",
-          args: [owner, BigInt(i)],
-        })
-      )
-    );
+    const ids = await this.tokensOf(collection, owner);
 
     // Best tier wins, and that token is the one whose traits they wear.
     let best = NO_HOLDING;
@@ -187,6 +204,64 @@ export class NftService {
       if (TIER_RANK[token.tier] > TIER_RANK[best.tier]) best = token;
     }
     return best;
+  }
+
+  /**
+   * Which tokens this wallet currently holds.
+   *
+   * Derived from Transfer logs rather than from tokenOfOwnerByIndex, because
+   * the collection does not implement ERC721Enumerable and that function does
+   * not exist on it. This works against any ERC-721, which is the point: the
+   * contract was deployed by a marketplace and we do not control what it
+   * supports.
+   *
+   * Two steps, and the second is what makes it correct. Logs give every token
+   * this address has ever RECEIVED, which is a superset of what it holds now,
+   * since anything later sold still appears. ownerOf then confirms each
+   * candidate against current state. Working from the logs alone would mean
+   * replaying transfers in order and getting the arithmetic exactly right;
+   * asking the contract who owns it now cannot drift.
+   */
+  private async tokensOf(collection: `0x${string}`, owner: `0x${string}`): Promise<bigint[]> {
+    const received = await this.client.getLogs({
+      address: collection,
+      event: TRANSFER_EVENT,
+      args: { to: owner },
+      fromBlock: FIRST_BLOCK,
+      toBlock: "latest",
+    });
+
+    const candidates: bigint[] = [];
+    const seen = new Set<string>();
+    for (const log of received) {
+      const id = log.args.tokenId;
+      if (id === undefined) continue;
+      const key = id.toString();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      candidates.push(id);
+      // A wallet with thousands of transfers is not worth a thousand reads.
+      if (candidates.length >= MAX_TOKENS_SCANNED) break;
+    }
+
+    const owned = await Promise.all(
+      candidates.map(async (id) => {
+        try {
+          const current = await this.client.readContract({
+            address: collection,
+            abi: ERC721_ABI,
+            functionName: "ownerOf",
+            args: [id],
+          });
+          return current.toLowerCase() === owner.toLowerCase() ? id : null;
+        } catch {
+          // Burned, or otherwise no longer answerable. Not held either way.
+          return null;
+        }
+      })
+    );
+
+    return owned.filter((id): id is bigint => id !== null);
   }
 
   /**
