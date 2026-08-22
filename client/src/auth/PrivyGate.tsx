@@ -53,7 +53,15 @@ export function PrivyGate({ children }: { children: ReactNode }) {
         appearance: {
           theme: "dark",
           accentColor: "#22e8ff",
-          logo: "/favicon.svg",
+          /*
+           * A 2:1 PNG, which is what Privy asks for, served from our own
+           * origin. The favicon was square and rendered as a cramped icon
+           * rather than a wordmark above the sign-in.
+           *
+           * Drawn at 2x and transparent, because the same asset appears in
+           * Privy's emails where the background is not ours to choose.
+           */
+          logo: "/privy-logo.png",
           walletChainType: "ethereum-only",
         },
       }}

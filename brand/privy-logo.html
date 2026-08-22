@@ -1,0 +1,67 @@
+<title>Privy logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800;900&display=swap" rel="stylesheet" />
+
+<style>
+  /*
+    The logo Privy shows above the sign-in modal, 2:1 as their dashboard asks.
+
+    Two constraints that are not obvious.
+
+    It has to work on ANY ground. The modal here is configured dark, but the
+    same asset is used in Privy's transactional emails, and an email client
+    decides its own background. So the page is transparent and every mark is
+    amber, which is the one colour in this palette that holds against both white
+    and near-black. White type would vanish in an email; dark type would vanish
+    in the modal.
+
+    And it is drawn at 2x. The dashboard recommends 180x90, which is the
+    displayed size, not the asset size; shipping exactly that is a blurry logo on
+    every retina screen.
+  */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 360px;
+    height: 180px;
+    /* No background: --transparent omits it, so this only affects local viewing. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    font-family: Archivo, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+    The coin is already a finished PNG at an exact multiple of its own grid.
+    Nearest-neighbour keeps it that way; smoothing a 48px pixel grid up to 112
+    is how pixel art turns to soup.
+  */
+  .coin {
+    width: 112px;
+    height: 112px;
+    image-rendering: pixelated;
+    flex: 0 0 auto;
+    /*
+     * Clipped to a circle, because the coin PNG has no alpha.
+     * The collection's encoder writes RGB only, so the corners of the square
+     * carry the game's ink colour, and on a transparent logo that reads as a
+     * black box around the mark. The disc is inscribed in the square, so a
+     * round clip removes exactly the corners and nothing else.
+     */
+    border-radius: 50%;
+  }
+
+  .word {
+    font-size: 46px;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    color: #e5a85c;
+  }
+</style>
+
+<img class="coin" src="out/block-coin-1152.png" alt="" />
+<div class="word">QUANTO</div>

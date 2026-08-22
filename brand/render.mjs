@@ -55,7 +55,15 @@ await p.evaluate(() => document.fonts.ready);
 await p.waitForTimeout(350);
 
 const out = join(HERE, "out", outName);
-await p.screenshot({ path: out, type: "png" });
+/**
+ * Transparent when asked.
+ *
+ * A logo dropped into somebody else 's interface cannot bring its own
+ * background with it, because that interface may be any colour. Passing
+ * --transparent omits the page ground so the PNG carries alpha.
+ */
+const transparent = process.argv.includes("--transparent");
+await p.screenshot({ path: out, type: "png", omitBackground: transparent });
 await browser.close();
 
 console.log(`${outName}  ${width}x${height}`);
